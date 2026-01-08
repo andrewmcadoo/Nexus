@@ -1,0 +1,12 @@
+{
+  "id": "act_002",
+  "kind": "patch",
+  "summary": "Malicious path traversal attempt",
+  "risk": 3,
+  "requires_approval": true,
+  "details": {
+    "format": "unified",
+    "diff": "--- a/../../../etc/passwd\n+++ b/../../../etc/passwd\n@@ -1 +1 @@\n-root:x:0:0:root:/root:/bin/bash\n+hacked:x:0:0:root:/root:/bin/bash",
+    "files": ["../../../etc/passwd"]
+  }
+}

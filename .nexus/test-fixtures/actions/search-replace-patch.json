@@ -1,0 +1,32 @@
+{
+  "id": "act_sr_001",
+  "kind": "patch",
+  "summary": "Update function names using search/replace",
+  "why": "Refactor to follow new naming conventions",
+  "risk": 1,
+  "policy_tags": ["writes_repo"],
+  "requires_approval": true,
+  "created_by": {
+    "agent": "executor",
+    "provider": "openai",
+    "model": "codex"
+  },
+  "details": {
+    "format": "search_replace",
+    "search_replace_blocks": [
+      {
+        "file": "src/utils/helpers.ts",
+        "search": "function oldHelperFunction(",
+        "replace": "function newHelperFunction(",
+        "match_mode": "exact"
+      },
+      {
+        "file": "src/utils/helpers.ts",
+        "search": "  const   result  =  compute()",
+        "replace": "  const result = compute()",
+        "match_mode": "whitespace_insensitive"
+      }
+    ],
+    "on_conflict": "fail"
+  }
+}

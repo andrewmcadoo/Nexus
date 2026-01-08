@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/context_pack.schema.json",
+  "$defs": {
+    "repo_relative_path": {
+      "type": "string",
+      "pattern": "^(?!.*\\.\\.)(?!/)(?!.*[\\x00-\\x1f]).*$",
+      "description": "Repository-relative path. No traversal (..), absolute paths, or control characters."
+    }
+  },
+  "title": "ContextPack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "refs",
+    "hash"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "doc",
+              "file",
+              "grep",
+              "artifact"
+            ]
+          },
+          "path": {
+            "$ref": "#/$defs/repo_relative_path"
+          },
+          "slice": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "artifact": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "uri"
+            ],
+            "properties": {
+              "uri": {
+                "type": "string",
+                "description": "Artifact URI (e.g. artifact://runs/<id>/... or file path)."
+              },
+              "mime": {
+                "type": "string"
+              },
+              "sha256": {
+                "type": "string",
+                "description": "Hex sha256 of artifact bytes when available."
+              },
+              "size_bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_ctx_kib": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "hash": {
+      "type": "string",
+      "description": "sha256 of the canonicalized pack (used for caching)."
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Pack version for cache invalidation"
+    }
+  }
+}

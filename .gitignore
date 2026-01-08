@@ -1,0 +1,28 @@
+# Claude memory (session-specific, not committed)
+.claude/memory/
+
+# Rust
+/target/
+Cargo.lock
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+
+# Nexus runtime
+.nexus/runs/
+.nexus/cache/
+
+
+# Added by cargo
+
+/target

@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/event.schema.json",
+  "title": "RunEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "v",
+    "type",
+    "time",
+    "run_id"
+  ],
+  "properties": {
+    "v": {
+      "type": "string",
+      "pattern": "^nexus/[0-9]+$",
+      "description": "Schema version (e.g., nexus/1)"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "workflow_id": {
+      "type": "string"
+    },
+    "node_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "description": "Event type (action.proposed, permission.granted, tool.executed, node.blocked, ...)."
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "correlation_id": {
+          "type": "string"
+        },
+        "span_id": {
+          "type": "string"
+        },
+        "parent_span_id": {
+          "type": "string"
+        }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agent": {
+          "type": "string",
+          "enum": [
+            "router",
+            "researcher",
+            "planner",
+            "executor",
+            "reviewer",
+            "tool"
+          ],
+          "description": "Logical role (not provider-specific)."
+        },
+        "provider": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "payload_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uri"
+      ],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "description": "Artifact URI (e.g. artifact://runs/<id>/... or file path)."
+        },
+        "mime": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "description": "Hex sha256 of artifact bytes when available."
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

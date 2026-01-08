@@ -1,0 +1,18 @@
+--- a/src/types/mod.rs
++++ b/src/types/mod.rs
+@@ -1,2 +1,3 @@
+ pub mod action;
+ pub mod event;
++pub mod settings;
+
+--- a/src/types/settings.rs
++++ b/src/types/settings.rs
+@@ -0,0 +1,10 @@
++use serde::{Deserialize, Serialize};
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++pub enum PermissionMode {
++    Default,
++    AcceptEdits,
++    Autopilot,
++}

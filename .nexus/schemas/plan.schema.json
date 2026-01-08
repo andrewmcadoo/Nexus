@@ -1,0 +1,438 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/plan.schema.json",
+  "title": "ImplementationPlan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "plan_id",
+    "phase_id",
+    "title",
+    "steps"
+  ],
+  "properties": {
+    "plan_id": {
+      "type": "string"
+    },
+    "phase_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "superseded",
+        "completed"
+      ],
+      "default": "draft"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "derived_from": {
+      "type": "string",
+      "description": "Optional previous plan_id this plan supersedes."
+    },
+    "agenda_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Repo-relative path to a Markdown doc."
+          },
+          "slice": {
+            "type": "string",
+            "description": "Optional slice selector (e.g. #HEADING, #ID, or a custom region)."
+          },
+          "max_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Optional limit when materializing the slice."
+          }
+        }
+      }
+    },
+    "research_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "uri"
+        ],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "description": "Artifact URI (e.g. artifact://runs/<id>/... or file path)."
+          },
+          "mime": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Hex sha256 of artifact bytes when available."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "exec_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "autobatch": {
+          "type": "boolean",
+          "default": true
+        },
+        "stop_on_test_fail": {
+          "type": "boolean",
+          "default": true
+        },
+        "stop_on_blocked": {
+          "type": "boolean",
+          "default": true
+        },
+        "require_plan_patch_on_deviation": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_max_ctx_kib": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 160
+        },
+        "default_max_files_touched": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 5
+        },
+        "default_max_diff_lines": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 400
+        },
+        "default_max_cu": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 18
+        },
+        "max_batch_cu": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 40
+        },
+        "max_batch_steps": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 8
+        }
+      }
+    },
+    "test_command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "argv"
+      ],
+      "properties": {
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "description": "Command executed as argv (no shell string)."
+        },
+        "cwd": {
+          "type": "string",
+          "description": "Working directory (repo-relative or absolute)."
+        },
+        "timeout_s": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Timeout in seconds."
+        },
+        "env_allow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names of env vars allowed to be passed through."
+        },
+        "requires_network": {
+          "type": "boolean",
+          "description": "Whether this command needs network access."
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Human-readable reason this command is run."
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "ctx": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "docs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "description": "Repo-relative path to a Markdown doc."
+                    },
+                    "slice": {
+                      "type": "string",
+                      "description": "Optional slice selector (e.g. #HEADING, #ID, or a custom region)."
+                    },
+                    "max_bytes": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Optional limit when materializing the slice."
+                    }
+                  }
+                }
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Repo paths (dirs or files) relevant to this operation."
+              },
+              "files_read": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "files_write": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Expected/allowed write targets."
+              },
+              "grep": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Search terms for repo.search (ripgrep-style)."
+              },
+              "commands": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "argv"
+                  ],
+                  "properties": {
+                    "argv": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Command executed as argv (no shell string)."
+                    },
+                    "cwd": {
+                      "type": "string",
+                      "description": "Working directory (repo-relative or absolute)."
+                    },
+                    "timeout_s": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Timeout in seconds."
+                    },
+                    "env_allow": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Names of env vars allowed to be passed through."
+                    },
+                    "requires_network": {
+                      "type": "boolean",
+                      "description": "Whether this command needs network access."
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "description": "Human-readable reason this command is run."
+                    }
+                  }
+                }
+              },
+              "max_ctx_kib": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Context pack budget for this step/node."
+              }
+            }
+          },
+          "acceptance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "validation": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "argv"
+              ],
+              "properties": {
+                "argv": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Command executed as argv (no shell string)."
+                },
+                "cwd": {
+                  "type": "string",
+                  "description": "Working directory (repo-relative or absolute)."
+                },
+                "timeout_s": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Timeout in seconds."
+                },
+                "env_allow": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Names of env vars allowed to be passed through."
+                },
+                "requires_network": {
+                  "type": "boolean",
+                  "description": "Whether this command needs network access."
+                },
+                "purpose": {
+                  "type": "string",
+                  "description": "Human-readable reason this command is run."
+                }
+              }
+            }
+          },
+          "baml": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fn"
+            ],
+            "properties": {
+              "fn": {
+                "type": "string",
+                "description": "BAML function name (e.g. ExecStep)."
+              },
+              "inputs": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          },
+          "budget": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "max_ctx_kib": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "max_files_touched": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "max_diff_lines": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "max_cu": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "risk": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "allow_network": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

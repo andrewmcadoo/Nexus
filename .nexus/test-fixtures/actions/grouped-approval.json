@@ -1,0 +1,25 @@
+{
+  "id": "act_grp_001",
+  "kind": "file_rename",
+  "summary": "Rename component file (1 of 3 in batch)",
+  "why": "Batch rename of React components to PascalCase",
+  "risk": 1,
+  "policy_tags": ["writes_repo"],
+  "requires_approval": true,
+  "created_by": {
+    "agent": "executor",
+    "provider": "openai",
+    "model": "codex"
+  },
+  "approval_group": {
+    "id": "grp_component_rename_001",
+    "label": "Rename React components to PascalCase",
+    "size": 3,
+    "index": 0
+  },
+  "details": {
+    "old_path": "src/components/button.tsx",
+    "new_path": "src/components/Button.tsx",
+    "overwrite": false
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "act_wf_001",
+  "kind": "patch",
+  "summary": "Replace entire configuration file",
+  "why": "Complete config restructure required for v2 migration",
+  "risk": 2,
+  "policy_tags": ["writes_repo"],
+  "requires_approval": true,
+  "created_by": {
+    "agent": "executor",
+    "provider": "anthropic",
+    "model": "claude-3"
+  },
+  "details": {
+    "format": "whole_file",
+    "whole_file_content": {
+      "config/app.json": "{\n  \"version\": \"2.0\",\n  \"features\": {\n    \"darkMode\": true,\n    \"analytics\": false\n  }\n}"
+    },
+    "base_file_sha256": {
+      "config/app.json": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+    },
+    "on_conflict": "theirs"
+  }
+}

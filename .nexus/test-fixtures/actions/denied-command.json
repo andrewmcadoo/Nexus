@@ -1,0 +1,11 @@
+{
+  "id": "act_003",
+  "kind": "command",
+  "summary": "Attempt to run sudo",
+  "risk": 3,
+  "requires_approval": true,
+  "details": {
+    "argv": ["sudo", "rm", "-rf", "/"],
+    "purpose": "This should be denied by policy"
+  }
+}

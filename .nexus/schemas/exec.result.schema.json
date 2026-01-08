@@ -1,0 +1,294 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/exec.result.schema.json",
+  "$defs": {
+    "repo_relative_path": {
+      "type": "string",
+      "pattern": "^(?!.*\\.\\.)(?!/)(?!.*[\\x00-\\x1f]).*$",
+      "description": "Repository-relative path. No traversal (..), absolute paths, or control characters."
+    }
+  },
+  "title": "ExecResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "summary"
+  ],
+  "properties": {
+    "plan_id": {
+      "type": "string"
+    },
+    "step_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "DONE",
+        "BLOCKED",
+        "FAIL",
+        "PLAN_PATCH_NEEDED"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "proposed_actions": {
+      "type": "array",
+      "items": {
+        "$ref": "proposed_action.schema.json"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "uri"
+        ],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "description": "Artifact URI (e.g. artifact://runs/<id>/... or file path)."
+          },
+          "mime": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Hex sha256 of artifact bytes when available."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ran": {
+          "type": "boolean"
+        },
+        "command": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "argv"
+          ],
+          "properties": {
+            "argv": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "description": "Command executed as argv (no shell string)."
+            },
+            "cwd": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/repo_relative_path"
+                }
+              ],
+              "description": "Working directory (repo-relative or absolute)."
+            },
+            "timeout_s": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Timeout in seconds."
+            },
+            "env_allow": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Names of env vars allowed to be passed through."
+            },
+            "requires_network": {
+              "type": "boolean",
+              "description": "Whether this command needs network access."
+            },
+            "purpose": {
+              "type": "string",
+              "description": "Human-readable reason this command is run."
+            }
+          }
+        },
+        "exit_code": {
+          "type": "integer"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "log": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "uri"
+          ],
+          "properties": {
+            "uri": {
+              "type": "string",
+              "description": "Artifact URI (e.g. artifact://runs/<id>/... or file path)."
+            },
+            "mime": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string",
+              "description": "Hex sha256 of artifact bytes when available."
+            },
+            "size_bytes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "label": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "blocker": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "needs_research",
+            "needs_plan_patch",
+            "needs_user_input",
+            "unknown"
+          ]
+        },
+        "question": {
+          "type": "string"
+        },
+        "suggested_ctx": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "docs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "allOf": [
+                      {
+                        "$ref": "#/$defs/repo_relative_path"
+                      }
+                    ],
+                    "description": "Repo-relative path to a Markdown doc."
+                  },
+                  "slice": {
+                    "type": "string",
+                    "description": "Optional slice selector (e.g. #HEADING, #ID, or a custom region)."
+                  },
+                  "max_bytes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Optional limit when materializing the slice."
+                  }
+                }
+              }
+            },
+            "paths": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/repo_relative_path"
+              },
+              "description": "Repo paths (dirs or files) relevant to this operation."
+            },
+            "files_read": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/repo_relative_path"
+              }
+            },
+            "files_write": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/repo_relative_path"
+              },
+              "description": "Expected/allowed write targets."
+            },
+            "grep": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Search terms for repo.search (ripgrep-style)."
+            },
+            "commands": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "argv"
+                ],
+                "properties": {
+                  "argv": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Command executed as argv (no shell string)."
+                  },
+                  "cwd": {
+                    "allOf": [
+                      {
+                        "$ref": "#/$defs/repo_relative_path"
+                      }
+                    ],
+                    "description": "Working directory (repo-relative or absolute)."
+                  },
+                  "timeout_s": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Timeout in seconds."
+                  },
+                  "env_allow": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Names of env vars allowed to be passed through."
+                  },
+                  "requires_network": {
+                    "type": "boolean",
+                    "description": "Whether this command needs network access."
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "description": "Human-readable reason this command is run."
+                  }
+                }
+              }
+            },
+            "max_ctx_kib": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Context pack budget for this step/node."
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "act_fc_001",
+  "kind": "file_create",
+  "summary": "Create new configuration file",
+  "why": "Initial project setup requires config file",
+  "risk": 1,
+  "policy_tags": ["writes_repo"],
+  "requires_approval": true,
+  "created_by": {
+    "agent": "executor",
+    "provider": "anthropic",
+    "model": "claude-3"
+  },
+  "details": {
+    "path": "config/settings.json",
+    "content": "{\n  \"version\": \"1.0\",\n  \"environment\": \"development\"\n}",
+    "overwrite": false,
+    "ignore_if_exists": false
+  }
+}

@@ -1,0 +1,5 @@
+{"v":"nexus/1","run_id":"run_001","type":"run.started","time":"2026-01-08T12:00:00Z","actor":{"agent":"tool"}}
+{"v":"nexus/1","run_id":"run_001","type":"action.proposed","time":"2026-01-08T12:00:01Z","actor":{"agent":"executor","provider":"openai","model":"codex"},"payload":{"action_id":"act_001","kind":"patch","summary":"Rename function"}}
+{"v":"nexus/1","run_id":"run_001","type":"permission.granted","time":"2026-01-08T12:00:05Z","actor":{"agent":"tool"},"payload":{"action_id":"act_001","scope":"once"}}
+{"v":"nexus/1","run_id":"run_001","type":"tool.executed","time":"2026-01-08T12:00:06Z","actor":{"agent":"tool"},"payload":{"action_id":"act_001","success":true,"files_modified":["src/api.ts"]}}
+{"v":"nexus/1","run_id":"run_001","type":"run.completed","time":"2026-01-08T12:00:07Z","actor":{"agent":"tool"},"payload":{"status":"success","actions_applied":1}}

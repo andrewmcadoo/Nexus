@@ -1,0 +1,12 @@
+{
+  "id": "act_invalid_002",
+  "kind": "file_delete",
+  "summary": "INVALID: Attempts absolute path access",
+  "why": "This fixture should FAIL validation - tests absolute path rejection",
+  "risk": 3,
+  "requires_approval": true,
+  "details": {
+    "path": "/etc/passwd",
+    "recursive": false
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "act_001",
+  "kind": "patch",
+  "summary": "Rename getUserData to fetchUserProfile",
+  "why": "Consistent naming with other fetch functions",
+  "risk": 1,
+  "policy_tags": ["writes_repo"],
+  "requires_approval": true,
+  "created_by": {
+    "agent": "executor",
+    "provider": "openai",
+    "model": "codex"
+  },
+  "details": {
+    "format": "unified",
+    "diff": "--- a/src/api.ts\n+++ b/src/api.ts\n@@ -10,7 +10,7 @@\n-export function getUserData(id: string) {\n+export function fetchUserProfile(id: string) {\n   return fetch(`/api/users/${id}`);\n }",
+    "files": ["src/api.ts"],
+    "base_file_sha256": {
+      "src/api.ts": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

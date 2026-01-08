@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/workflow.definition.schema.json",
+  "title": "WorkflowDefinition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "workflow_id",
+    "definition_hash",
+    "nodes",
+    "edges"
+  ],
+  "properties": {
+    "workflow_id": {
+      "type": "string"
+    },
+    "definition_hash": {
+      "type": "string",
+      "description": "sha256 hash of the canonical workflow definition."
+    },
+    "intent": {
+      "type": "string",
+      "description": "Optional router intent label."
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_batch_cu": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_ctx_kib": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "risk_hard_stop": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "agent",
+          "op",
+          "goal"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "agent": {
+            "type": "string",
+            "enum": [
+              "router",
+              "researcher",
+              "planner",
+              "executor",
+              "reviewer",
+              "tool"
+            ],
+            "description": "Logical role (not provider-specific)."
+          },
+          "op": {
+            "type": "string",
+            "description": "Operation name understood by the orchestrator (e.g. RESEARCH, PLAN, EXEC_STEP)."
+          },
+          "goal": {
+            "type": "string"
+          },
+          "inputs": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "ctx": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "docs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "description": "Repo-relative path to a Markdown doc."
+                    },
+                    "slice": {
+                      "type": "string",
+                      "description": "Optional slice selector (e.g. #HEADING, #ID, or a custom region)."
+                    },
+                    "max_bytes": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Optional limit when materializing the slice."
+                    }
+                  }
+                }
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Repo paths (dirs or files) relevant to this operation."
+              },
+              "files_read": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "files_write": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Expected/allowed write targets."
+              },
+              "grep": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Search terms for repo.search (ripgrep-style)."
+              },
+              "commands": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "argv"
+                  ],
+                  "properties": {
+                    "argv": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Command executed as argv (no shell string)."
+                    },
+                    "cwd": {
+                      "type": "string",
+                      "description": "Working directory (repo-relative or absolute)."
+                    },
+                    "timeout_s": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Timeout in seconds."
+                    },
+                    "env_allow": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Names of env vars allowed to be passed through."
+                    },
+                    "requires_network": {
+                      "type": "boolean",
+                      "description": "Whether this command needs network access."
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "description": "Human-readable reason this command is run."
+                    }
+                  }
+                }
+              },
+              "max_ctx_kib": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Context pack budget for this step/node."
+              }
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "uri"
+              ],
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "description": "Artifact URI (e.g. artifact://runs/<id>/... or file path)."
+                },
+                "mime": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string",
+                  "description": "Hex sha256 of artifact bytes when available."
+                },
+                "size_bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "label": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "needs_approval": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Names of approval categories expected (handoff, patch, command, autopilot, etc.)."
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": {
+          "type": "string"
+        }
+      },
+      "description": "Directed edges as [from_node_id, to_node_id]. Use sequential edges for v0."
+    }
+  }
+}

@@ -1,0 +1,12 @@
+--- a/src/engine.rs
++++ b/src/engine.rs
+@@ -5,7 +5,7 @@
+ impl Engine {
+-    pub fn run(&self) -> Result<()> {
++    pub fn run(&mut self) -> Result<()> {
+         // This line doesn't exist - will cause conflict
+-        let foo = bar();
++        let foo = baz();
+         Ok(())
+     }
+ }

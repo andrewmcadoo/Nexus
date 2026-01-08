@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/settings.schema.json",
+  "$defs": {
+    "repo_relative_path": {
+      "type": "string",
+      "pattern": "^(?!.*\\.\\.)(?!/)(?!.*[\\x00-\\x1f]).*$",
+      "description": "Repository-relative path. No traversal (..), absolute paths, or control characters."
+    }
+  },
+  "title": "NexusSettings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "permission_mode",
+    "schema_version"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version for settings file"
+    },
+    "permission_mode": {
+      "type": "string",
+      "enum": [
+        "default",
+        "acceptEdits",
+        "autopilot"
+      ],
+      "default": "default",
+      "description": "Permission mode. No bypass mode - security by design."
+    },
+    "deny_paths": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/repo_relative_path"
+      }
+    },
+    "allow_paths_write": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/repo_relative_path"
+      }
+    },
+    "allow_commands": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "description": "Allowlisted commands as argv arrays (exact match unless you build a matcher)."
+    },
+    "ask_commands": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "deny_commands": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "autopilot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_batch_cu": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 40
+        },
+        "max_batch_steps": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 8
+        },
+        "auto_approve_patches": {
+          "type": "boolean",
+          "default": false
+        },
+        "auto_approve_tests": {
+          "type": "boolean",
+          "default": false
+        },
+        "auto_handoffs": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  }
+}

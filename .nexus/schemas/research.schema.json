@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/research.schema.json",
+  "title": "ResearchBundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "research_id",
+    "topic",
+    "questions",
+    "findings"
+  ],
+  "properties": {
+    "research_id": {
+      "type": "string"
+    },
+    "topic": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim",
+          "status"
+        ],
+        "properties": {
+          "claim": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "probable",
+              "assumption",
+              "disputed",
+              "unknown"
+            ]
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title",
+                "url"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "publisher": {
+                  "type": "string"
+                },
+                "accessed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "quote": {
+                  "type": "string",
+                  "description": "Short excerpt; keep small."
+                }
+              }
+            }
+          },
+          "implications": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Extracted constraints for planning."
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/router.workflow.schema.json",
+  "title": "RouterWorkflowProposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "primary",
+    "confidence"
+  ],
+  "properties": {
+    "primary": {
+      "$ref": "workflow.definition.schema.json"
+    },
+    "alternatives": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "$ref": "workflow.definition.schema.json"
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Short reason the router chose this workflow."
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Clarifying questions if confidence is low."
+    },
+    "directives": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional extracted user directives like 'codex->claude'."
+    }
+  }
+}

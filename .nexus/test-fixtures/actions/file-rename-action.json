@@ -1,0 +1,19 @@
+{
+  "id": "act_fr_001",
+  "kind": "file_rename",
+  "summary": "Rename old config to new naming convention",
+  "why": "Standardize configuration file names across project",
+  "risk": 1,
+  "policy_tags": ["writes_repo"],
+  "requires_approval": true,
+  "created_by": {
+    "agent": "executor",
+    "provider": "openai",
+    "model": "codex"
+  },
+  "details": {
+    "old_path": "config/old-settings.json",
+    "new_path": "config/app-settings.json",
+    "overwrite": false
+  }
+}

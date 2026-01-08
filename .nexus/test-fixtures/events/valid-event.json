@@ -1,0 +1,23 @@
+{
+  "v": "nexus/1",
+  "run_id": "run_test_001",
+  "workflow_id": "wf_001",
+  "node_id": "node_001",
+  "type": "action.proposed",
+  "time": "2026-01-08T12:00:00Z",
+  "trace": {
+    "correlation_id": "corr_001",
+    "span_id": "span_001",
+    "parent_span_id": "span_000"
+  },
+  "actor": {
+    "agent": "executor",
+    "provider": "anthropic",
+    "model": "claude-3"
+  },
+  "payload": {
+    "action_id": "act_test_001",
+    "kind": "patch",
+    "summary": "Test action proposal"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "permission_mode": "default",
+  "deny_paths": ["secrets/"]
+}

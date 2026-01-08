@@ -1,0 +1,478 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexus.local/schemas/proposed_action.schema.json",
+  "$defs": {
+    "repo_relative_path": {
+      "type": "string",
+      "pattern": "^(?!.*\\.\\.)(?!/)(?!.*[\\x00-\\x1f]).*$",
+      "description": "Repository-relative path. No traversal (..), absolute paths, or control characters."
+    }
+  },
+  "title": "ProposedAction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "kind",
+    "summary",
+    "details"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique action id (for event correlation)."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "handoff",
+        "patch",
+        "command",
+        "plan_patch",
+        "agenda_patch",
+        "file_create",
+        "file_rename",
+        "file_delete"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "why": {
+      "type": "string",
+      "description": "Reason/rationale; shown to user in approval card."
+    },
+    "risk": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "default": 1
+    },
+    "policy_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requires_approval": {
+      "type": "boolean",
+      "default": true
+    },
+    "created_by": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agent": {
+          "type": "string",
+          "enum": [
+            "router",
+            "researcher",
+            "planner",
+            "executor",
+            "reviewer",
+            "tool"
+          ],
+          "description": "Logical role (not provider-specific)."
+        },
+        "provider": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        }
+      }
+    },
+    "approval_group": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique group identifier" },
+        "label": { "type": "string", "description": "Human-readable group name" },
+        "size": { "type": "integer", "minimum": 1, "description": "Total actions in group" },
+        "index": { "type": "integer", "minimum": 0, "description": "This action's position in group (0-indexed)" }
+      },
+      "required": ["id", "label", "size", "index"],
+      "additionalProperties": false,
+      "description": "Optional grouping for batch approval of related actions (e.g., multi-file rename)"
+    },
+    "details": {
+      "type": "object"
+    }
+  },
+  "oneOf": [
+    {
+      "title": "PatchAction",
+      "properties": {
+        "kind": {
+          "const": "patch"
+        },
+        "details": {
+          "type": "object",
+          "description": "Format-specific fields: unified requires 'diff', search_replace requires 'search_replace_blocks', whole_file requires 'whole_file_content'.",
+          "additionalProperties": false,
+          "required": [
+            "format"
+          ],
+          "properties": {
+            "format": {
+              "type": "string",
+              "enum": [
+                "unified",
+                "search_replace",
+                "whole_file"
+              ],
+              "default": "unified"
+            },
+            "diff": {
+              "type": "string",
+              "maxLength": 1000000,
+              "description": "For unified format: unified diff to apply. Path traversal checked at runtime."
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/repo_relative_path"
+              },
+              "description": "Optional touched file list."
+            },
+            "base_file_sha256": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Optional mapping path->sha256 of expected base content to prevent stale patch apply."
+            },
+            "on_conflict": {
+              "type": "string",
+              "enum": [
+                "fail",
+                "ours",
+                "theirs",
+                "marker"
+              ],
+              "default": "fail",
+              "description": "Conflict resolution strategy: fail=abort, ours=keep existing, theirs=use patch, marker=insert conflict markers"
+            },
+            "search_replace_blocks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/$defs/repo_relative_path"
+                  },
+                  "search": {
+                    "type": "string",
+                    "maxLength": 100000
+                  },
+                  "replace": {
+                    "type": "string",
+                    "maxLength": 100000
+                  },
+                  "match_mode": {
+                    "type": "string",
+                    "enum": [
+                      "exact",
+                      "whitespace_insensitive"
+                    ],
+                    "default": "exact"
+                  }
+                },
+                "required": [
+                  "file",
+                  "search",
+                  "replace"
+                ],
+                "additionalProperties": false
+              },
+              "description": "For search_replace format: blocks of search/replace pairs per file"
+            },
+            "whole_file_content": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string",
+                "maxLength": 1000000
+              },
+              "description": "For whole_file format: map of file path to complete new content"
+            },
+            "fallback_strategy": {
+              "type": "string",
+              "enum": [
+                "none",
+                "fuzzy",
+                "line_anchor"
+              ],
+              "default": "none",
+              "description": "Strategy when exact match fails: none=fail, fuzzy=similarity matching, line_anchor=match by surrounding lines"
+            },
+            "fuzzy_threshold": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "default": 0.8,
+              "description": "Minimum similarity ratio for fuzzy matching (0.0-1.0)"
+            },
+            "match_confidence": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "description": "Reported confidence of match when fallback was used (output field)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "CommandAction",
+      "properties": {
+        "kind": {
+          "const": "command"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "argv"
+          ],
+          "properties": {
+            "argv": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "description": "Command executed as argv (no shell string)."
+            },
+            "cwd": {
+              "$ref": "#/$defs/repo_relative_path"
+            },
+            "timeout_s": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1200
+            },
+            "env_allow": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Names of env vars allowed to be passed through."
+            },
+            "requires_network": {
+              "type": "boolean",
+              "default": false
+            },
+            "purpose": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "HandoffAction",
+      "properties": {
+        "kind": {
+          "const": "handoff"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "from",
+            "to",
+            "reason"
+          ],
+          "properties": {
+            "from": {
+              "type": "string",
+              "enum": [
+                "router",
+                "researcher",
+                "planner",
+                "executor",
+                "reviewer",
+                "tool"
+              ],
+              "description": "Logical role (not provider-specific)."
+            },
+            "to": {
+              "type": "string",
+              "enum": [
+                "router",
+                "researcher",
+                "planner",
+                "executor",
+                "reviewer",
+                "tool"
+              ],
+              "description": "Logical role (not provider-specific)."
+            },
+            "reason": {
+              "type": "string"
+            },
+            "workflow_patch_ref": {
+              "type": "string",
+              "description": "Optional artifact URI pointing to a workflow patch / new workflow."
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "PlanPatchAction",
+      "properties": {
+        "kind": {
+          "const": "plan_patch"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "plan_id",
+            "patch_ref"
+          ],
+          "properties": {
+            "plan_id": {
+              "type": "string"
+            },
+            "patch_ref": {
+              "type": "string",
+              "description": "Artifact URI to plan patch JSON (or full replacement)."
+            },
+            "patch_mode": {
+              "type": "string",
+              "enum": [
+                "replace",
+                "json_patch"
+              ],
+              "default": "replace"
+            },
+            "summary": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "AgendaPatchAction",
+      "properties": {
+        "kind": {
+          "const": "agenda_patch"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "target_path",
+            "diff"
+          ],
+          "properties": {
+            "target_path": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/repo_relative_path"
+                }
+              ],
+              "description": "Typically AGENDA.md or docs/phases/<id>.md"
+            },
+            "diff": {
+              "type": "string",
+              "maxLength": 1000000,
+              "description": "Unified diff for the markdown target."
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "FileCreateAction",
+      "properties": {
+        "kind": {
+          "const": "file_create"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "content"
+          ],
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/repo_relative_path"
+            },
+            "content": {
+              "type": "string",
+              "maxLength": 1000000
+            },
+            "overwrite": {
+              "type": "boolean",
+              "default": false
+            },
+            "ignore_if_exists": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "FileRenameAction",
+      "properties": {
+        "kind": {
+          "const": "file_rename"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "old_path",
+            "new_path"
+          ],
+          "properties": {
+            "old_path": {
+              "$ref": "#/$defs/repo_relative_path"
+            },
+            "new_path": {
+              "$ref": "#/$defs/repo_relative_path"
+            },
+            "overwrite": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "FileDeleteAction",
+      "properties": {
+        "kind": {
+          "const": "file_delete"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/repo_relative_path"
+            },
+            "recursive": {
+              "type": "boolean",
+              "default": false
+            },
+            "ignore_if_missing": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        }
+      }
+    }
+  ]
+}

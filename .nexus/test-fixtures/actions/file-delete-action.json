@@ -1,0 +1,19 @@
+{
+  "id": "act_fd_001",
+  "kind": "file_delete",
+  "summary": "Remove deprecated configuration file",
+  "why": "File is no longer used after migration to new config system",
+  "risk": 2,
+  "policy_tags": ["writes_repo", "destructive"],
+  "requires_approval": true,
+  "created_by": {
+    "agent": "executor",
+    "provider": "anthropic",
+    "model": "claude-3"
+  },
+  "details": {
+    "path": "config/legacy-settings.json",
+    "recursive": false,
+    "ignore_if_missing": false
+  }
+}

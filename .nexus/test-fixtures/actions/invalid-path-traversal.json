@@ -1,0 +1,13 @@
+{
+  "id": "act_invalid_001",
+  "kind": "file_create",
+  "summary": "INVALID: Attempts path traversal",
+  "why": "This fixture should FAIL validation - tests path security",
+  "risk": 3,
+  "requires_approval": true,
+  "details": {
+    "path": "../../../etc/shadow",
+    "content": "malicious content",
+    "overwrite": true
+  }
+}

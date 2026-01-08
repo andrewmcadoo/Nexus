@@ -1,0 +1,28 @@
+{
+  "id": "act_fz_001",
+  "kind": "patch",
+  "summary": "Update function with fuzzy matching fallback",
+  "why": "Handle minor whitespace/formatting differences in target file",
+  "risk": 1,
+  "policy_tags": ["writes_repo"],
+  "requires_approval": true,
+  "created_by": {
+    "agent": "executor",
+    "provider": "anthropic",
+    "model": "claude-3"
+  },
+  "details": {
+    "format": "search_replace",
+    "search_replace_blocks": [
+      {
+        "file": "src/api/client.ts",
+        "search": "const API_VERSION = \"v1\";",
+        "replace": "const API_VERSION = \"v2\";",
+        "match_mode": "exact"
+      }
+    ],
+    "fallback_strategy": "fuzzy",
+    "fuzzy_threshold": 0.85,
+    "on_conflict": "fail"
+  }
+}
