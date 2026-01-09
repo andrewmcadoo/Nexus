@@ -81,6 +81,8 @@ impl RunEvent {
     /// # Examples
     ///
     /// ```
+    /// use nexus::RunEvent;
+    ///
     /// let ev = RunEvent::new("run-123", "action.proposed");
     /// assert_eq!(ev.v, "nexus/1");
     /// assert_eq!(ev.run_id, "run-123");
@@ -108,6 +110,7 @@ impl RunEvent {
     /// # Examples
     ///
     /// ```
+    /// use nexus::RunEvent;
     /// use serde_json::json;
     ///
     /// let ev = RunEvent::new("run-1", "action.proposed")
@@ -125,6 +128,8 @@ impl RunEvent {
     /// # Examples
     ///
     /// ```
+    /// use nexus::{RunEvent, Actor};
+    ///
     /// let event = RunEvent::new("run-1", "action.proposed")
     ///     .with_actor(Actor { ..Default::default() });
     /// assert!(event.actor.is_some());

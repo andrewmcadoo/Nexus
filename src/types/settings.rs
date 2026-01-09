@@ -44,6 +44,8 @@ impl Default for AutopilotConfig {
     /// # Examples
     ///
     /// ```
+    /// use nexus::AutopilotConfig;
+    ///
     /// let cfg = AutopilotConfig::default();
     /// assert_eq!(cfg.max_batch_cu, 40);
     /// assert_eq!(cfg.max_batch_steps, 8);
@@ -62,29 +64,12 @@ impl Default for AutopilotConfig {
     }
 }
 
-/// Returns the default maximum compute units allowed per batch for autopilot.
-///
-/// # Returns
-///
-/// `40` — the default max batch compute units.
-///
-/// # Examples
-///
-/// ```
-/// let cu = default_max_batch_cu();
-/// assert_eq!(cu, 40);
-/// ```
+/// Returns the default maximum compute units allowed per batch for autopilot (40).
 fn default_max_batch_cu() -> u32 {
     40
 }
 
-/// Default maximum number of steps allowed per batch for autopilot.
-///
-/// # Examples
-///
-/// ```
-/// assert_eq!(default_max_batch_steps(), 8);
-/// ```
+/// Default maximum number of steps allowed per batch for autopilot (8).
 fn default_max_batch_steps() -> u32 {
     8
 }
@@ -117,13 +102,7 @@ pub struct NexusSettings {
     pub autopilot: Option<AutopilotConfig>,
 }
 
-/// Returns the default schema version used by Nexus settings.
-///
-/// # Examples
-///
-/// ```
-/// assert_eq!(default_schema_version(), "1.0");
-/// ```
+/// Returns the default schema version used by Nexus settings ("1.0").
 fn default_schema_version() -> String {
     "1.0".to_string()
 }
@@ -141,6 +120,8 @@ impl Default for NexusSettings {
     /// # Examples
     ///
     /// ```
+    /// use nexus::{NexusSettings, PermissionMode};
+    ///
     /// let s = NexusSettings::default();
     /// assert_eq!(s.schema_version, "1.0");
     /// assert!(s.deny_paths.contains(&".env*".to_string()));
@@ -182,6 +163,8 @@ impl NexusSettings {
     /// # Examples
     ///
     /// ```
+    /// use nexus::NexusSettings;
+    ///
     /// let settings = NexusSettings::default();
     /// assert!(settings.validate().is_ok());
     /// ```
@@ -220,29 +203,6 @@ impl NexusSettings {
 ///
 /// Ensures the pattern does not contain path traversal (`..`), is not an absolute
 /// path (except globs beginning with `"/**/"`), and contains no control characters.
-///
-/// # Returns
-///
-/// `Ok(())` if the pattern is acceptable, `Err(SettingsValidationError::InvalidPathPattern)`
-/// with the offending `path` and a `reason` otherwise.
-///
-/// # Examples
-///
-/// ```
-/// // valid glob
-/// assert!(validate_path_pattern("src/**/*.rs").is_ok());
-/// assert!(validate_path_pattern("/**/foo").is_ok());
-///
-/// // invalid patterns
-/// let err = validate_path_pattern("../secret").unwrap_err();
-/// match err {
-///     SettingsValidationError::InvalidPathPattern { path, reason } => {
-///         assert!(path.contains(".."));
-///         assert!(reason.contains("path traversal"));
-///     }
-///     _ => panic!("expected InvalidPathPattern"),
-/// }
-/// ```
 fn validate_path_pattern(path: &str) -> Result<(), SettingsValidationError> {
     if path.contains("..") {
         return Err(SettingsValidationError::InvalidPathPattern {
@@ -305,8 +265,10 @@ mod tests {
 
     #[test]
     fn test_validate_invalid_schema_version() {
-        let mut settings = NexusSettings::default();
-        settings.schema_version = "2.0".to_string();
+        let settings = NexusSettings {
+            schema_version: "2.0".to_string(),
+            ..Default::default()
+        };
         assert!(matches!(
             settings.validate(),
             Err(SettingsValidationError::InvalidSchemaVersion(_))

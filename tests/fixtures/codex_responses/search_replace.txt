@@ -1,0 +1,8 @@
+data: {"id":"chatcmpl-456","object":"chat.completion.chunk","created":1700000000,"model":"gpt-5.2-codex","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-456","object":"chat.completion.chunk","created":1700000000,"model":"gpt-5.2-codex","choices":[{"index":0,"delta":{"content":"<<<<<<< SEARCH src/lib.rs\nold\n=======\nnew\n>>>>>>> REPLACE\n"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-456","object":"chat.completion.chunk","created":1700000000,"model":"gpt-5.2-codex","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+

@@ -7,3 +7,43 @@
 {"data":{"cli_config_arg":"/tmp/should-use-this.json","has_api_key":false,"has_settings_file":true,"settings_path_used":"/tmp/should-use-this.json"},"hypothesisId":"H1","location":"src/main.rs:run:config_loaded","message":"Config loaded","runId":"pre-fix","sessionId":"debug-session","timestamp":1767930793607}
 {"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767933456001}
 {"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767933456002}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767933817501}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767933817502}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767933837516}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767933837517}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767935572958}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767935572959}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767940424322}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767940424323}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767940888358}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767940888358}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767940888359}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767940888361}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767942048949}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767942048950}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767942223362}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767942223363}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767943056662}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767943056663}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767943655508}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767943655509}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767943966697}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767943966698}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767944114629}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767944114630}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767944255658}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767944255658}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767944637905}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767944637905}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767944745522}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767944745523}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767944931312}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767944931313}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767945114596}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767945114597}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767946057427}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767946057428}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767946284219}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767946284220}
+{"sessionId":"debug-session","runId":"pre-fix","hypothesisId":"H0","location":"src/main.rs:main","message":"probe:main.entry","timestamp":1767946585827}
+{"data":{"env_config":null,"raw_args":["target/debug/nexus","--help"]},"hypothesisId":"H4","location":"src/main.rs:run:pre_parse","message":"Pre-parse snapshot","runId":"pre-fix","sessionId":"debug-session","timestamp":1767946585828}
