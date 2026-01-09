@@ -1,7 +1,8 @@
 # Nexus Handoff Document
 
-**Updated:** 2026-01-08
+**Updated:** 2026-01-09
 **Project:** Nexus - Safe multi-file refactoring CLI in Rust
+**GitHub:** andrewmcadoo/Nexus
 
 ---
 
@@ -20,88 +21,126 @@ Build a Rust CLI that does safe multi-file refactoring:
 
 ## Current Progress
 
-### Completed: Phase 0 - Schema Fixes
+### Completed: Phase 0 & 0.5 - Schema Work
+- All schema fixes and improvements done
+- Test fixtures created
 
-| Change | Status |
-|--------|--------|
-| Removed `bypass` from permission_mode | Done |
-| Removed `ext` fields from all 9 schemas | Done |
-| Added `maxLength: 1000000` to diff fields | Done |
-| Created test fixtures directory | Done |
+### Completed: Phase 1 - CLI Foundation
+- Branch: `feature/phase1-foundation`
+- PR #1 merged
+- Clap CLI, error types, settings loader, Rust types from schemas
 
-### Completed: Phase 0.5 - Schema Improvements
+### Completed: Phase 2 - Event Logging
+- Branch: `feature/phase1-foundation` (same branch)
+- PR #3: **Open with bug reviews - NEEDS FIXES**
+- Append-only JSONL event log with file locking
+- Reader/Writer with shared/exclusive locks
+- Helper functions for event creation
 
-Based on competitive analysis (Aider, Codex CLI, LSP, Semgrep, ast-grep), enhanced schemas:
+### Just Shipped: Phase 3 - Executor Module
+- Branch: `feature/phase3-executor`
+- PR #4: Draft PR created
+- HTTP client with retry logic and streaming
+- Response parser for unified diffs and search/replace
+- Prompt builder for API requests
+- Event logging integration
 
-| Task | Change | Status |
-|------|--------|--------|
-| ARCH-1 | Path validation (`$defs/repo_relative_path`) in 4 schemas | Done |
-| ARCH-2 | File operations: `file_create`, `file_rename`, `file_delete` | Done |
-| ARCH-3 | Diff formats: `unified`, `search_replace`, `whole_file` | Done |
-| ARCH-4 | Fallback matching: `fuzzy`, `line_anchor` strategies | Done |
-| ARCH-5 | Settings required: `permission_mode`, `schema_version` | Done |
-| ARCH-6 | Approval groups for batch approval | Done |
-| ARCH-7 | Document versioning in context_pack and event | Done |
-| ARCH-8 | Conflict resolution: `fail`, `ours`, `theirs`, `marker` | Done |
-| TEST-1 | Test fixtures for all new features (14 files) | Done |
+---
 
-**Full plan:** `docs/schema-improvement-plan.md`
+## IMMEDIATE TODO: Fix PR #3 Bug Reviews
 
-**Test fixtures structure:**
+### Critical Issues
+
+#### 1. Hardcoded Debug Paths (CRITICAL)
+**Files:** `src/main.rs:103-148`, `src/settings.rs:232-277`
+
+**Problem:** `debug_log` functions use hardcoded paths:
+```rust
+const DEBUG_LOG_PATH: &str = "/Users/aj/Desktop/Projects/Nexus/.cursor/debug.log";
 ```
-.nexus/test-fixtures/
-├── actions/
-│   ├── valid-patch.json
-│   ├── path-traversal-attempt.json
-│   ├── denied-command.json
-│   ├── file-create-action.json
-│   ├── file-rename-action.json
-│   ├── file-delete-action.json
-│   ├── search-replace-patch.json
-│   ├── whole-file-patch.json
-│   ├── grouped-approval.json
-│   ├── fuzzy-match-patch.json
-│   ├── invalid-path-traversal.json
-│   └── invalid-absolute-path.json
-├── settings/
-│   ├── valid-minimal.json
-│   ├── valid-full.json
-│   ├── invalid-empty.json
-│   └── invalid-no-version.json
-├── diffs/
-│   ├── simple-add.diff
-│   ├── multi-file.diff
-│   └── conflict.diff
-└── events/
-    ├── sample-run.jsonl
-    └── valid-event.json
+These fail on other machines and CI.
+
+**Fix Options:**
+- Option A: Use `NEXUS_DEBUG_LOG` env var with `std::env::temp_dir()` fallback
+- Option B: Guard with `#[cfg(feature = "debug-logging")]` feature flag
+- Option C: Remove entirely (it's temporary debugging code)
+
+#### 2. Debug Log File Committed (MEDIUM)
+**File:** `.cursor/debug.log`
+
+**Problem:** Debug log with session data committed to repo.
+
+**Fix:**
+```bash
+echo ".cursor/debug.log" >> .gitignore
+git rm --cached .cursor/debug.log
 ```
 
-### Pending: Phase 1-7
+#### 3. Config Loading Breaks Without File (MEDIUM)
+**File:** `src/main.rs:69-72`
 
-Phase 1 (Foundation) is ready to start.
+**Problem:** Changed from `NexusConfig::load()` to `load_with_config_path(&cli.config)` which errors if file doesn't exist instead of falling back to defaults.
+
+**Fix:** Check if path exists, fall back to `load()` if not:
+```rust
+let config = if cli.config.exists() {
+    NexusConfig::load_with_config_path(&cli.config)?
+} else {
+    NexusConfig::load()?
+};
+```
+
+### Minor Issues
+
+#### 4. EventLogWriter Uses Empty PathBuf in Errors
+**File:** `src/event_log/writer.rs:131-137`
+
+**Problem:** Error handlers use `PathBuf::new()` (empty) instead of actual path.
+
+**Fix:** Add `path: PathBuf` field to `EventLogWriter` struct, use `self.path.clone()` in error mappings.
+
+#### 5. Run ID Length Validation Off-by-6
+**File:** `src/event_log/mod.rs:59-64`
+
+**Problem:** Allows 255 chars but filename is `{run_id}.jsonl` (+6 chars).
+
+**Fix:** Change limit from 255 to 249 characters.
+
+#### 6. Writer Fails on Corrupted Lines
+**File:** `src/event_log/writer.rs:102-103`
+
+**Problem:** `scan_max_event_seq` fails on malformed JSON, unlike reader which skips.
+
+**Fix:** Skip corrupted lines with warning, continue scanning (match reader behavior).
+
+#### 7. Non-Executable Doctests on Private Helpers
+**File:** `src/types/action.rs:65-87, 233-244, 302-315`
+
+**Problem:** Doc examples on private functions can't be tested.
+
+**Fix:** Remove `/// # Examples` blocks or convert to `//` comments.
 
 ---
 
 ## What Worked
 
-1. **Skill evaluation before implementation** - Caught 10 issues in schemas/architecture
-2. **Removing bypass mode** - Security by design, no footguns
-3. **Removing ext fields** - YAGNI, cleaner types
-4. **Test fixtures upfront** - Ready for integration tests
-5. **Competitive research before schema finalization** - Found gaps (file ops, diff formats) and validated strengths (risk levels, approval gates)
-6. **Parallel sub-agent execution** - Ran ARCH-3/5 in parallel, then ARCH-4/6/7/8 in parallel for speed
-7. **Codex via MCP for all code** - Clean separation: Claude plans/reviews, Codex writes
+1. **Skill evaluation before implementation** - Caught issues early
+2. **Codex via MCP for all code** - Clean separation: Claude plans/reviews, Codex writes
+3. **Parallel sub-agent execution** - Speed up multi-task work
+4. **Ship skill for commits** - Consistent workflow with security scans
+5. **Separate branches per phase** - Clean PR separation
 
 ---
 
 ## What Didn't Work / Watch Out For
 
-1. **Schema `oneOf` with sibling `kind`/`details`** - Maps awkwardly to Rust. Solution: Use `#[serde(flatten)]` with `#[serde(untagged)]` enum, validate kind↔details match at runtime.
+1. **Schema `oneOf` with sibling `kind`/`details`** - Maps awkwardly to Rust. Use `#[serde(flatten)]` with `#[serde(untagged)]` enum.
 
 2. **JSON Schema `default` doesn't auto-apply in serde** - Need explicit `#[serde(default = "...")]` annotations.
 
-3. **Some `cwd` fields may need absolute paths** - Path validation pattern blocks absolute paths. May need separate pattern for cwd fields if absolute paths required.
+3. **Hardcoded developer paths** - Debug logging committed with absolute paths. Always use env vars or temp dirs.
+
+4. **Config loading semantic change** - `load_with_config_path` has different semantics than `load()`. Check file existence first.
 
 ---
 
@@ -110,46 +149,44 @@ Phase 1 (Foundation) is ready to start.
 | File | Purpose |
 |------|---------|
 | `docs/implementation-plan.md` | Full 7-phase build plan |
-| `docs/schema-improvement-plan.md` | Phase 0.5 schema enhancements |
-| `docs/architecture.md` | Original architecture spec |
-| `.nexus/schemas/*.json` | JSON schemas (enhanced) |
-| `.nexus/policy.md` | Permission policy design |
-| `.nexus/test-fixtures/` | Test data for integration tests |
+| `docs/plans/phase2-implementation-plan.md` | Phase 2 detailed plan |
+| `src/event_log/` | Event logging module |
+| `src/executor/` | Codex executor module (Phase 3) |
+| `src/cli.rs` | CLI argument parsing |
+| `src/settings.rs` | Config loading |
+| `src/error.rs` | Error types and exit codes |
+| `tests/event_log.rs` | Event log integration tests |
+| `tests/executor.rs` | Executor integration tests |
 
 ---
 
-## Schema Enhancements Summary
+## Branch Status
 
-| Schema | New Features |
-|--------|--------------|
-| `proposed_action.schema.json` | 3 file ops, 3 diff formats, fallback matching, approval groups, conflict resolution, path validation |
-| `settings.schema.json` | Required fields, schema_version, path validation |
-| `context_pack.schema.json` | Version field, path validation |
-| `event.schema.json` | Version pattern `^nexus/[0-9]+$` |
-| `exec.result.schema.json` | Path validation |
+| Branch | PR | Status |
+|--------|-----|--------|
+| `main` | - | Base |
+| `feature/phase1-foundation` | PR #3 | **Needs bug fixes** |
+| `feature/phase3-executor` | PR #4 | Draft, ready for review |
 
 ---
 
 ## Next Steps
 
-### Phase 1: Foundation
-1. `cargo init --name nexus` in project root
-2. Set up Cargo.toml with dependencies:
-   ```toml
-   serde, serde_json, clap, tokio, thiserror, anyhow, chrono
-   ```
-3. Create `src/error.rs` with `NexusError` enum
-4. Derive Rust types from JSON schemas (`src/types/`)
-5. CLI skeleton with clap
-6. Settings loader for `.nexus/settings.json`
+1. **Fix PR #3 bugs** (on `feature/phase1-foundation` branch)
+   - Remove/fix hardcoded debug paths
+   - Add `.cursor/debug.log` to gitignore
+   - Fix config loading fallback
+   - Fix EventLogWriter path in errors
+   - Adjust run_id length limit
+   - Make writer skip corrupted lines
+   - Fix/remove private helper doctests
 
-### Architecture Decisions (Already Made)
-- Single crate (no workspace)
-- tokio async for API calls, sync for file ops
-- thiserror for library, anyhow for CLI
-- `tokio::sync::Mutex` for session state
-- API key from env only (`OPENAI_API_KEY`)
-- No bypass mode
+2. **Get PR #3 merged**
+
+3. **Continue Phase 4** - Permission Gate
+   - Interactive prompts with crossterm
+   - Allow/Deny/Ask modes
+   - Policy matching
 
 ---
 
@@ -157,35 +194,36 @@ Phase 1 (Foundation) is ready to start.
 
 ```bash
 cd /Users/aj/Desktop/Projects/Nexus
+git checkout feature/phase1-foundation
+git status
 
-# Read the plans
-cat docs/implementation-plan.md
-cat docs/schema-improvement-plan.md
+# Check test status
+cargo test
 
-# Validate schemas
-npx ajv-cli validate -s .nexus/schemas/settings.schema.json -d .nexus/test-fixtures/settings/valid-minimal.json
+# Run clippy
+cargo clippy -- -D warnings
 
-# Start Phase 1
-cargo init --name nexus
+# After fixes, ship
+# /ship
 ```
 
 ---
 
 ## Skills to Load
 
-When resuming, run `/skill-evaluator` or load these directly:
+When resuming, run `/skill-evaluator` or load:
 - `rust-idioms`
-- `rust-project-structure`
 - `rust-testing`
 - `codex-coder` (Codex writes ALL code via MCP)
 - `security-scan`
+- `ship`
 
 ---
 
 ## Memory Bank
 
-Project memory initialized at: `.claude/memory/`
+Project memory at: `.claude/memory/`
 - `CLAUDE-activeContext.md` - Session state
 - `CLAUDE-patterns.md` - Code patterns
-- `CLAUDE-decisions.md` - Architecture decisions (9 ADRs)
+- `CLAUDE-decisions.md` - Architecture decisions
 - `CLAUDE-troubleshooting.md` - Known issues

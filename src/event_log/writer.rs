@@ -2,7 +2,7 @@
 
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, BufWriter, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use fs2::FileExt;
 use serde::ser::Error as SerError;
@@ -17,6 +17,7 @@ use crate::types::RunEvent;
 pub struct EventLogWriter {
     writer: BufWriter<File>,
     event_seq: u64,
+    path: PathBuf,
 }
 
 impl EventLogWriter {
@@ -45,6 +46,7 @@ impl EventLogWriter {
         Ok(Self {
             writer: BufWriter::new(file),
             event_seq: next_seq,
+            path: path.to_path_buf(),
         })
     }
 
@@ -100,7 +102,13 @@ impl EventLogWriter {
                 continue;
             }
 
-            let value: serde_json::Value = serde_json::from_str(&line)?;
+            let value: serde_json::Value = match serde_json::from_str(&line) {
+                Ok(v) => v,
+                Err(e) => {
+                    log::warn!("Skipping corrupted line in event log: {}", e);
+                    continue;
+                }
+            };
             if let Some(seq) = value.get("event_seq").and_then(|v| v.as_u64()) {
                 max_seq = max_seq.max(seq);
             }
@@ -132,7 +140,7 @@ impl EventLogWriter {
             .write_all(b"\n")
             .map_err(|e| NexusError::IoError {
                 operation: "write newline".to_string(),
-                path: std::path::PathBuf::new(),
+                path: self.path.clone(),
                 source: e,
             })?;
 
@@ -144,7 +152,7 @@ impl EventLogWriter {
     pub fn sync(&mut self) -> Result<(), NexusError> {
         self.writer.flush().map_err(|e| NexusError::IoError {
             operation: "flush buffer".to_string(),
-            path: std::path::PathBuf::new(),
+            path: self.path.clone(),
             source: e,
         })?;
 
@@ -153,7 +161,7 @@ impl EventLogWriter {
             .sync_data()
             .map_err(|e| NexusError::IoError {
                 operation: "sync to disk".to_string(),
-                path: std::path::PathBuf::new(),
+                path: self.path.clone(),
                 source: e,
             })?;
 
@@ -271,6 +279,24 @@ mod tests {
 
         let writer = EventLogWriter::open(&path).unwrap();
         assert_eq!(writer.next_seq(), 1);
+    }
+
+    #[test]
+    fn test_writer_handles_corrupted_line_on_reopen() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("test.jsonl");
+
+        // Write valid line, corrupted line, valid line
+        std::fs::write(
+            &path,
+            "{\"event_seq\":1}\n\
+             not valid json\n\
+             {\"event_seq\":3}\n",
+        )
+        .unwrap();
+
+        let writer = EventLogWriter::open(&path).unwrap();
+        assert_eq!(writer.next_seq(), 4); // Should continue from max (3) + 1
     }
 
     #[test]
