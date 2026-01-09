@@ -109,8 +109,21 @@ impl ResponseParser {
         format!("{run_id}-action-{index}")
     }
 
+    /// Validates a run_id for use in action IDs and event correlation.
+    ///
+    /// Validates that run_id is non-empty, contains no path separators or traversal
+    /// sequences, and does not exceed 255 characters. These checks match the validation
+    /// in the event_log module per ADR-014.
     fn validate_run_id(&self, run_id: &str) -> Result<(), NexusError> {
         if run_id.trim().is_empty() {
+            return Err(NexusError::InvalidRunId(run_id.to_string()));
+        }
+        // Path separator and traversal checks (matches event_log validation)
+        if run_id.contains('/') || run_id.contains('\\') || run_id.contains("..") {
+            return Err(NexusError::InvalidRunId(run_id.to_string()));
+        }
+        // Length check (255 chars max, matches filesystem constraints)
+        if run_id.len() > 255 {
             return Err(NexusError::InvalidRunId(run_id.to_string()));
         }
         Ok(())
@@ -264,6 +277,21 @@ impl ResponseParser {
         }
     }
 
+    /// Parses JSON actions from fenced code blocks in the response.
+    ///
+    /// Looks for ```json ... ``` blocks containing a JSON array of `ProposedAction` objects.
+    /// Returns the first successfully parsed array, or `None` if no fenced JSON blocks are found.
+    ///
+    /// # JSON Format
+    ///
+    /// Expects a JSON array where each element has at minimum:
+    /// - `"kind"`: The action type (e.g., "patch", "shell")
+    /// - `"details"`: Action-specific payload matching the kind
+    ///
+    /// # Errors
+    ///
+    /// Returns `NexusError::JsonError` if a fenced block is found but contains invalid JSON
+    /// or does not conform to the `ProposedAction` schema.
     fn parse_fenced_json_actions(
         &self,
         response: &str,
@@ -278,6 +306,20 @@ impl ResponseParser {
         Ok(None)
     }
 
+    /// Parses JSON actions embedded inline (not in fenced blocks) in the response.
+    ///
+    /// Scans for JSON arrays directly in the text by matching balanced `[...]` brackets.
+    /// Only considers arrays that appear to be action arrays (contain `"kind"` and `"details"` keys).
+    /// Returns the first successfully parsed action array, or an empty `Vec` if none found.
+    ///
+    /// # Heuristics
+    ///
+    /// Uses `looks_like_action_array()` to filter candidates before attempting JSON parse,
+    /// reducing failed parse attempts on unrelated JSON arrays in the response.
+    ///
+    /// # Errors
+    ///
+    /// Returns `NexusError::JsonError` if a candidate array is found but parsing fails.
     fn parse_inline_json_actions(&self, response: &str) -> Result<Vec<ProposedAction>, NexusError> {
         for candidate in extract_json_arrays(response) {
             if !looks_like_action_array(&candidate) {

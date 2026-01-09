@@ -202,7 +202,13 @@ impl NexusSettings {
 /// Validates a path glob pattern for Nexus settings.
 ///
 /// Ensures the pattern does not contain path traversal (`..`), is not an absolute
-/// path (except globs beginning with `"/**/"`), and contains no control characters.
+/// path (except globs beginning with `"/**/"`), contains no control characters,
+/// and does not use Windows-specific absolute path formats.
+///
+/// # Windows Path Handling
+///
+/// Rejects Windows drive letters (e.g., `C:\`) and UNC paths (e.g., `\\server\share`)
+/// since glob patterns should be relative to the project root.
 fn validate_path_pattern(path: &str) -> Result<(), SettingsValidationError> {
     if path.contains("..") {
         return Err(SettingsValidationError::InvalidPathPattern {
@@ -211,6 +217,7 @@ fn validate_path_pattern(path: &str) -> Result<(), SettingsValidationError> {
         });
     }
 
+    // Unix absolute paths (except /**/globs)
     if path.starts_with('/') && !path.starts_with("/**/") {
         return Err(SettingsValidationError::InvalidPathPattern {
             path: path.to_string(),
@@ -218,7 +225,27 @@ fn validate_path_pattern(path: &str) -> Result<(), SettingsValidationError> {
         });
     }
 
-    if path.chars().any(|ch| ch <= '\u{1f}') {
+    // Windows drive letters (C:\, D:\, etc.)
+    if path.len() >= 2 {
+        let bytes = path.as_bytes();
+        if bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {
+            return Err(SettingsValidationError::InvalidPathPattern {
+                path: path.to_string(),
+                reason: "Windows drive paths not allowed in patterns".to_string(),
+            });
+        }
+    }
+
+    // Windows UNC paths (\\server\share)
+    if path.starts_with("\\\\") {
+        return Err(SettingsValidationError::InvalidPathPattern {
+            path: path.to_string(),
+            reason: "UNC paths not allowed in patterns".to_string(),
+        });
+    }
+
+    // Control characters (using is_control() for comprehensive check including DEL)
+    if path.chars().any(|ch| ch.is_control()) {
         return Err(SettingsValidationError::InvalidPathPattern {
             path: path.to_string(),
             reason: "control characters not allowed in patterns".to_string(),
@@ -298,5 +325,36 @@ mod tests {
     #[test]
     fn test_validate_glob_absolute_allowed() {
         assert!(validate_path_pattern("/**/foo").is_ok());
+    }
+
+    #[test]
+    fn test_validate_windows_drive_path() {
+        let result = validate_path_pattern("C:\\Users\\test");
+        assert!(matches!(
+            result,
+            Err(SettingsValidationError::InvalidPathPattern { reason, .. })
+            if reason.contains("Windows drive")
+        ));
+    }
+
+    #[test]
+    fn test_validate_windows_unc_path() {
+        let result = validate_path_pattern("\\\\server\\share\\file");
+        assert!(matches!(
+            result,
+            Err(SettingsValidationError::InvalidPathPattern { reason, .. })
+            if reason.contains("UNC")
+        ));
+    }
+
+    #[test]
+    fn test_validate_control_characters() {
+        // Test DEL character (0x7F) which is_control() catches
+        let result = validate_path_pattern("foo\x7Fbar");
+        assert!(matches!(
+            result,
+            Err(SettingsValidationError::InvalidPathPattern { reason, .. })
+            if reason.contains("control characters")
+        ));
     }
 }

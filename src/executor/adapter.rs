@@ -70,6 +70,40 @@ impl CodexAdapter {
         }
     }
 
+    /// Internal execution method that accepts a run_id parameter.
+    ///
+    /// This ensures consistent run_id across logged events and returned actions.
+    async fn execute_internal(
+        &self,
+        task: &str,
+        files: &[FileContext],
+        options: &ExecuteOptions,
+        run_id: &str,
+    ) -> Result<Vec<ProposedAction>, NexusError> {
+        let request = self.build_request(task, files, options);
+        let stream = self.client.chat_completion_stream(request).await?;
+        let stream = Box::pin(stream);
+        let (response, _usage) = StreamHandler::accumulate(stream).await?;
+        self.parser.parse(&response, run_id)
+    }
+
+    /// Internal streaming execution method that accepts a run_id parameter.
+    async fn execute_streaming_internal(
+        &self,
+        task: &str,
+        files: &[FileContext],
+        options: &ExecuteOptions,
+        run_id: &str,
+        on_chunk: Box<dyn Fn(StreamChunk) + Send>,
+    ) -> Result<Vec<ProposedAction>, NexusError> {
+        let request = self.build_request(task, files, options);
+        let stream = self.client.chat_completion_stream(request).await?;
+        let stream = Box::pin(stream);
+        let callback = move |chunk| on_chunk(chunk);
+        let (response, _usage) = StreamHandler::with_callback(stream, callback).await?;
+        self.parser.parse(&response, run_id)
+    }
+
     pub async fn execute_with_logging(
         &self,
         task: &str,
@@ -83,7 +117,8 @@ impl CodexAdapter {
         let started = helpers::executor_started(&run_id, task, files.len(), &self.model);
         writer.append(&started)?;
 
-        let result = self.execute(task, files.to_vec(), options).await;
+        // Use the same run_id for execution to ensure event-action correlation
+        let result = self.execute_internal(task, files, &options, &run_id).await;
         match result {
             Ok(actions) => {
                 for action in &actions {
@@ -123,11 +158,7 @@ impl Executor for CodexAdapter {
         options: ExecuteOptions,
     ) -> Result<Vec<ProposedAction>, NexusError> {
         let run_id = generate_run_id();
-        let request = self.build_request(task, &files, &options);
-        let stream = self.client.chat_completion_stream(request).await?;
-        let stream = Box::pin(stream);
-        let (response, _usage) = StreamHandler::accumulate(stream).await?;
-        self.parser.parse(&response, &run_id)
+        self.execute_internal(task, &files, &options, &run_id).await
     }
 
     async fn execute_streaming(
@@ -138,12 +169,8 @@ impl Executor for CodexAdapter {
         on_chunk: Box<dyn Fn(StreamChunk) + Send>,
     ) -> Result<Vec<ProposedAction>, NexusError> {
         let run_id = generate_run_id();
-        let request = self.build_request(task, &files, &options);
-        let stream = self.client.chat_completion_stream(request).await?;
-        let stream = Box::pin(stream);
-        let callback = move |chunk| on_chunk(chunk);
-        let (response, _usage) = StreamHandler::with_callback(stream, callback).await?;
-        self.parser.parse(&response, &run_id)
+        self.execute_streaming_internal(task, &files, &options, &run_id, on_chunk)
+            .await
     }
 }
 

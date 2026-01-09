@@ -1,8 +1,8 @@
 //! Event log writer with atomic appends and exclusive locking.
 
 use std::fs::{File, OpenOptions};
-use std::io::{BufRead, BufReader, BufWriter, Write};
-use std::path::Path;
+use std::io::{BufRead, BufReader, BufWriter, ErrorKind, Write};
+use std::path::{Path, PathBuf};
 
 use fs2::FileExt;
 use serde::ser::Error as SerError;
@@ -17,6 +17,7 @@ use crate::types::RunEvent;
 pub struct EventLogWriter {
     writer: BufWriter<File>,
     event_seq: u64,
+    path: PathBuf,
 }
 
 impl EventLogWriter {
@@ -36,8 +37,19 @@ impl EventLogWriter {
         }
 
         let file = Self::open_file(path)?;
-        file.try_lock_exclusive()
-            .map_err(|_| NexusError::EventLogLocked)?;
+
+        // Distinguish between lock contention and other lock failures
+        file.try_lock_exclusive().map_err(|e| {
+            if e.kind() == ErrorKind::WouldBlock {
+                NexusError::EventLogLocked
+            } else {
+                NexusError::IoError {
+                    operation: "acquire exclusive lock".to_string(),
+                    path: path.to_path_buf(),
+                    source: e,
+                }
+            }
+        })?;
 
         let max_seq = Self::scan_max_event_seq(path)?;
         let next_seq = if max_seq == 0 { 1 } else { max_seq + 1 };
@@ -45,6 +57,7 @@ impl EventLogWriter {
         Ok(Self {
             writer: BufWriter::new(file),
             event_seq: next_seq,
+            path: path.to_path_buf(),
         })
     }
 
@@ -132,7 +145,7 @@ impl EventLogWriter {
             .write_all(b"\n")
             .map_err(|e| NexusError::IoError {
                 operation: "write newline".to_string(),
-                path: std::path::PathBuf::new(),
+                path: self.path.clone(),
                 source: e,
             })?;
 
@@ -144,7 +157,7 @@ impl EventLogWriter {
     pub fn sync(&mut self) -> Result<(), NexusError> {
         self.writer.flush().map_err(|e| NexusError::IoError {
             operation: "flush buffer".to_string(),
-            path: std::path::PathBuf::new(),
+            path: self.path.clone(),
             source: e,
         })?;
 
@@ -153,7 +166,7 @@ impl EventLogWriter {
             .sync_data()
             .map_err(|e| NexusError::IoError {
                 operation: "sync to disk".to_string(),
-                path: std::path::PathBuf::new(),
+                path: self.path.clone(),
                 source: e,
             })?;
 

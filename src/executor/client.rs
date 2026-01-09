@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::pin::Pin;
 use std::time::Duration;
-use tokio_retry::RetryIf;
-use tokio_retry::strategy::ExponentialBackoff;
+use tokio_retry2::strategy::ExponentialBackoff;
+use tokio_retry2::{Retry, RetryError};
 
 const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 const DEFAULT_MAX_RETRIES: usize = 3;
@@ -93,10 +93,7 @@ impl CodexClient {
         let client = Client::builder()
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .build()
-            .unwrap_or_else(|err| {
-                log::error!("failed to build reqwest client with timeout: {err}");
-                Client::new()
-            });
+            .expect("failed to build HTTP client - TLS backend unavailable");
 
         Self {
             client,
@@ -176,19 +173,13 @@ impl CodexClient {
         request: &ChatCompletionRequest,
     ) -> Result<reqwest::Response, NexusError> {
         let strategy = build_retry_strategy(self.max_retries);
-        RetryIf::spawn(
-            strategy,
-            || async { self.send_request(request).await },
-            |err: &RetryableError| err.is_retryable(),
-        )
-        .await
-        .map_err(RetryableError::into_nexus)
+        Retry::spawn(strategy, || async { self.send_request(request).await }).await
     }
 
     async fn send_request(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<reqwest::Response, RetryableError> {
+    ) -> Result<reqwest::Response, RetryError<NexusError>> {
         let url = format!(
             "{}/{}",
             self.base_url.trim_end_matches('/'),
@@ -211,7 +202,7 @@ impl CodexClient {
 
         let retry_after = parse_retry_after(response.headers());
         if status == StatusCode::TOO_MANY_REQUESTS {
-            return Err(RetryableError::Retryable(NexusError::RateLimited {
+            return Err(RetryError::transient(NexusError::RateLimited {
                 retry_after,
             }));
         }
@@ -268,23 +259,6 @@ enum StreamEvent {
     Empty,
 }
 
-enum RetryableError {
-    Retryable(NexusError),
-    Fatal(NexusError),
-}
-
-impl RetryableError {
-    fn is_retryable(&self) -> bool {
-        matches!(self, RetryableError::Retryable(_))
-    }
-
-    fn into_nexus(self) -> NexusError {
-        match self {
-            RetryableError::Retryable(err) | RetryableError::Fatal(err) => err,
-        }
-    }
-}
-
 fn build_retry_strategy(max_retries: usize) -> impl Iterator<Item = Duration> {
     ExponentialBackoff::from_millis(RETRY_BASE_MILLIS)
         .factor(RETRY_FACTOR)
@@ -303,33 +277,33 @@ fn apply_jitter(duration: Duration) -> Duration {
     duration + Duration::from_millis(jitter_ms)
 }
 
-fn map_request_error(err: reqwest::Error) -> RetryableError {
+fn map_request_error(err: reqwest::Error) -> RetryError<NexusError> {
     if err.is_timeout() {
-        return RetryableError::Retryable(NexusError::RequestTimeout {
+        return RetryError::transient(NexusError::RequestTimeout {
             timeout_secs: REQUEST_TIMEOUT_SECS,
         });
     }
 
     if err.is_connect() {
-        return RetryableError::Retryable(NexusError::ApiError {
+        return RetryError::transient(NexusError::ApiError {
             message: "connection error".to_string(),
             status_code: None,
             source: Some(Box::new(err)),
         });
     }
 
-    RetryableError::Fatal(NexusError::ApiError {
+    RetryError::permanent(NexusError::ApiError {
         message: "request failed".to_string(),
         status_code: None,
         source: Some(Box::new(err)),
     })
 }
 
-fn classify_status_error(status: StatusCode, error: NexusError) -> RetryableError {
+fn classify_status_error(status: StatusCode, error: NexusError) -> RetryError<NexusError> {
     if is_retryable_status(status) {
-        RetryableError::Retryable(error)
+        RetryError::transient(error)
     } else {
-        RetryableError::Fatal(error)
+        RetryError::permanent(error)
     }
 }
 
