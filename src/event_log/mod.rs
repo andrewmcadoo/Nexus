@@ -59,8 +59,7 @@ impl EventLogPath {
         }
         if run_id.len() > 249 {
             return Err(NexusError::InvalidRunId(
-                "run_id exceeds 249 characters (filename limit with .jsonl extension)"
-                    .to_string(),
+                "run_id exceeds 249 characters (filename limit with .jsonl extension)".to_string(),
             ));
         }
         Ok(())

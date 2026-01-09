@@ -87,9 +87,7 @@ fn load_settings() -> Result<(NexusSettings, Option<PathBuf>), NexusError> {
             let settings = load_from_file(&path)?;
             Ok((settings, Some(path)))
         }
-        None => {
-            Ok((NexusSettings::default(), None))
-        }
+        None => Ok((NexusSettings::default(), None)),
     }
 }
 
