@@ -1,6 +1,32 @@
 [package]
 name = "nexus"
 version = "0.1.0"
+authors = ["AJ"]
+categories = ["command-line-utilities", "development-tools"]
 edition = "2024"
+keywords = ["refactoring", "cli", "code-generation", "diff", "llm"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/yourusername/nexus"
+rust-version = "1.85"
+description = "Safe multi-file refactoring CLI for AI-assisted code transformations"
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4", features = ["derive", "env"] }
+tokio = { version = "1", features = ["rt", "macros", "signal"] }
+thiserror = "2"
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+log = "0.4"
+env_logger = "0.11"
+dotenvy = "0.15"
+secrecy = "0.10"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = true
+strip = true
