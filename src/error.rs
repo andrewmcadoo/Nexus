@@ -4,6 +4,21 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum NexusError {
+    #[error("invalid run_id: {0}")]
+    InvalidRunId(String),
+
+    #[error("event log is locked by another process")]
+    EventLogLocked,
+
+    #[error("event log not found: {}", .0.display())]
+    EventLogNotFound(PathBuf),
+
+    #[error("event log corrupted at line {line}: {message}")]
+    EventLogCorrupted { line: usize, message: String },
+
+    #[error("serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
+
     #[error("permission denied: {action}")]
     PermissionDenied {
         action: String,
@@ -133,6 +148,11 @@ impl From<&NexusError> for u8 {
     /// ```
     fn from(err: &NexusError) -> u8 {
         match err {
+            NexusError::InvalidRunId(_) => exit_codes::USAGE,
+            NexusError::EventLogLocked => 75, // EX_TEMPFAIL
+            NexusError::EventLogNotFound(_) => exit_codes::NOINPUT,
+            NexusError::EventLogCorrupted { .. } => exit_codes::DATAERR,
+            NexusError::Serialization(_) => exit_codes::DATAERR,
             NexusError::PermissionDenied { .. } => exit_codes::NOPERM,
             NexusError::PatchFailed { .. } => exit_codes::DATAERR,
             NexusError::ConfigError { .. } => exit_codes::CONFIG,

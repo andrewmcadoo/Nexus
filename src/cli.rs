@@ -70,12 +70,10 @@ fn validate_config_path(s: &str) -> Result<PathBuf, String> {
 #[derive(Parser, Debug)]
 #[command(name = "nexus")]
 #[command(version, about)]
-#[command(
-    after_help = "Examples:\n  \
+#[command(after_help = "Examples:\n  \
         nexus \"rename getUserData to fetchUserProfile\"\n  \
         nexus --dry-run \"extract validation logic\"\n  \
-        nexus -v --config custom.json \"refactor task\""
-)]
+        nexus -v --config custom.json \"refactor task\"")]
 pub struct Cli {
     /// The refactoring task to execute.
     ///

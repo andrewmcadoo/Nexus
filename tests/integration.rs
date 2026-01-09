@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::process::Command;
 
-use nexus::{ProposedAction, NexusSettings, RunEvent};
+use nexus::{NexusSettings, ProposedAction, RunEvent};
 
 #[test]
 fn test_deserialize_test_fixtures() {
@@ -16,21 +16,14 @@ fn test_deserialize_test_fixtures() {
         .join("valid-patch.json");
 
     if !fixture_path.exists() {
-        eprintln!(
-            "fixture missing at {}, skipping",
-            fixture_path.display()
-        );
+        eprintln!("fixture missing at {}, skipping", fixture_path.display());
         return;
     }
 
-    let contents = std::fs::read_to_string(&fixture_path)
-        .expect("failed to read fixture file");
-    let action: ProposedAction = serde_json::from_str(&contents)
-        .expect("failed to deserialize fixture");
-    assert!(
-        !action.id.is_empty(),
-        "expected non-empty action id"
-    );
+    let contents = std::fs::read_to_string(&fixture_path).expect("failed to read fixture file");
+    let action: ProposedAction =
+        serde_json::from_str(&contents).expect("failed to deserialize fixture");
+    assert!(!action.id.is_empty(), "expected non-empty action id");
 }
 
 #[test]
