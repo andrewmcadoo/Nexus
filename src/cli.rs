@@ -1,7 +1,19 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Validate task is non-empty.
+/// Validate and return a non-empty task description.
+///
+/// Trims leading and trailing whitespace from `s` and ensures the result is not empty.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(validate_task("  rename foo to bar  ").unwrap(), "rename foo to bar");
+/// assert!(validate_task("   ").is_err());
+/// ```
+///
+/// # Returns
+/// `Ok` with the trimmed task description, or `Err` with the message `"task description cannot be empty"`.
 fn validate_task(s: &str) -> Result<String, String> {
     let trimmed = s.trim();
     if trimmed.is_empty() {
@@ -11,7 +23,30 @@ fn validate_task(s: &str) -> Result<String, String> {
     }
 }
 
-/// Validate config path.
+/// Validate and parse a configuration file path, allowing non-existent paths.
+///
+/// If the provided path does not exist this function returns the parsed `PathBuf`
+/// (to allow defaults to be created later). If the path exists it must be a
+/// regular file.
+///
+/// # Returns
+///
+/// `Ok(PathBuf)` with the parsed path if the path is a file or does not exist;
+/// `Err(String)` with an explanatory message if the path exists but is not a file
+/// or if the path's metadata cannot be accessed.
+///
+/// # Examples
+///
+/// ```
+/// # use std::path::PathBuf;
+/// // Non-existent path is accepted
+/// let p = validate_config_path(".nonexistent/config.json").unwrap();
+/// assert_eq!(p, PathBuf::from(".nonexistent/config.json"));
+///
+/// // Existing file (example using this source file as a known existing file)
+/// let p = validate_config_path(file!()).unwrap();
+/// assert!(p.ends_with(file!()));
+/// ```
 fn validate_config_path(s: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(s);
 
@@ -75,7 +110,20 @@ pub struct Cli {
 }
 
 impl Cli {
-    /// Determine log level from verbosity count.
+    /// Returns the logging level string corresponding to the CLI verbosity count.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use crate::cli::Cli;
+    /// let cli = Cli {
+    ///     task: "rename foo to bar".into(),
+    ///     config: std::path::PathBuf::from(".nexus/settings.json"),
+    ///     dry_run: false,
+    ///     verbose: 2,
+    /// };
+    /// assert_eq!(cli.log_level(), "debug");
+    /// ```
     pub fn log_level(&self) -> &'static str {
         match self.verbose {
             0 => "warn",
@@ -94,6 +142,32 @@ mod tests {
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
 
+    /// Temporarily clears `NEXUS_CONFIG` and `NEXUS_DRY_RUN` environment variables while executing a closure.
+    ///
+    /// Returns the closure's result after restoring the original environment variables. The function acquires
+    /// `ENV_LOCK` to serialize access to the process environment while the closure runs.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::env;
+    ///
+    /// // ensure vars are set
+    /// env::set_var("NEXUS_CONFIG", "original");
+    /// env::set_var("NEXUS_DRY_RUN", "1");
+    ///
+    /// let res = with_clean_env(|| {
+    ///     // inside the closure, the vars are removed
+    ///     assert!(env::var("NEXUS_CONFIG").is_err());
+    ///     assert!(env::var("NEXUS_DRY_RUN").is_err());
+    ///     42
+    /// });
+    ///
+    /// // result is returned and environment is restored
+    /// assert_eq!(res, 42);
+    /// assert_eq!(env::var("NEXUS_CONFIG").unwrap(), "original");
+    /// assert_eq!(env::var("NEXUS_DRY_RUN").unwrap(), "1");
+    /// ```
     fn with_clean_env<T>(f: impl FnOnce() -> T) -> T {
         let _guard = ENV_LOCK.lock().expect("env lock poisoned");
         let old_config = std::env::var("NEXUS_CONFIG").ok();

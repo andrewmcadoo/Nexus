@@ -62,10 +62,26 @@ pub struct ProposedAction {
     pub details: ActionDetails,
 }
 
+/// Provides the default risk level for actions.
+///
+/// The default risk level is 1.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(default_risk(), 1);
+/// ```
 fn default_risk() -> u8 {
     1
 }
 
+/// Provides the boolean value `true` for use as a default.
+///
+/// # Examples
+///
+/// ```
+/// assert!(crate::default_true());
+/// ```
 fn default_true() -> bool {
     true
 }
@@ -214,6 +230,15 @@ pub struct CommandDetails {
     pub purpose: Option<String>,
 }
 
+/// Default command timeout in seconds.
+///
+/// Used as the default timeout value for command executions when no explicit timeout is provided.
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(crate::default_timeout(), 1200);
+/// ```
 fn default_timeout() -> u32 {
     1200
 }
@@ -274,7 +299,17 @@ pub struct FileDeleteDetails {
     pub ignore_if_missing: bool,
 }
 
-/// Helper for skip_serializing_if on Default values
+/// Checks whether the given value is equal to its type's `Default` value.
+///
+/// This is intended for use with `serde`'s `skip_serializing_if` to omit fields that are equal to their defaults.
+///
+/// # Examples
+///
+/// ```
+/// assert!(is_default(&0i32)); // i32::default() == 0
+/// assert!(!is_default(&1i32));
+/// assert!(is_default(&String::new()));
+/// ```
 fn is_default<T: Default + PartialEq>(value: &T) -> bool {
     *value == T::default()
 }
