@@ -74,7 +74,18 @@ pub struct RunEvent {
 }
 
 impl RunEvent {
-    /// Create a new event with required fields
+    /// Constructs a minimal RunEvent for the given run and event type, setting the schema version to "nexus/1" and the timestamp to the current UTC time.
+    ///
+    /// The returned event has `workflow_id`, `node_id`, `trace`, `actor`, `payload`, and `payload_ref` set to `None`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let ev = RunEvent::new("run-123", "action.proposed");
+    /// assert_eq!(ev.v, "nexus/1");
+    /// assert_eq!(ev.run_id, "run-123");
+    /// assert_eq!(ev.event_type, "action.proposed");
+    /// ```
     pub fn new(run_id: impl Into<String>, event_type: impl Into<String>) -> Self {
         Self {
             v: "nexus/1".to_string(),
@@ -90,13 +101,34 @@ impl RunEvent {
         }
     }
 
-    /// Add payload to event
+    /// Attaches a JSON payload to the event and returns the updated event.
+    ///
+    /// The provided value becomes the event's payload, replacing any existing payload.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use serde_json::json;
+    ///
+    /// let ev = RunEvent::new("run-1", "action.proposed")
+    ///     .with_payload(json!({"foo": "bar"}));
+    ///
+    /// assert_eq!(ev.payload.unwrap(), json!({"foo": "bar"}));
+    /// ```
     pub fn with_payload(mut self, payload: serde_json::Value) -> Self {
         self.payload = Some(payload);
         self
     }
 
-    /// Add actor to event
+    /// Sets the event's actor and returns the updated event.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let event = RunEvent::new("run-1", "action.proposed")
+    ///     .with_actor(Actor { ..Default::default() });
+    /// assert!(event.actor.is_some());
+    /// ```
     pub fn with_actor(mut self, actor: Actor) -> Self {
         self.actor = Some(actor);
         self

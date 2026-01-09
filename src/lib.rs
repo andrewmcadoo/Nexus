@@ -1,5 +1,6 @@
 pub mod cli;
 pub mod error;
+pub mod event_log;
 pub mod settings;
 pub mod types;
 

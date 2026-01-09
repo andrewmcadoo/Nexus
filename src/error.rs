@@ -4,6 +4,21 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum NexusError {
+    #[error("invalid run_id: {0}")]
+    InvalidRunId(String),
+
+    #[error("event log is locked by another process")]
+    EventLogLocked,
+
+    #[error("event log not found: {}", .0.display())]
+    EventLogNotFound(PathBuf),
+
+    #[error("event log corrupted at line {line}: {message}")]
+    EventLogCorrupted { line: usize, message: String },
+
+    #[error("serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
+
     #[error("permission denied: {action}")]
     PermissionDenied {
         action: String,
@@ -115,8 +130,29 @@ pub mod exit_codes {
 }
 
 impl From<&NexusError> for u8 {
+    /// Maps a `NexusError` variant to the appropriate numeric process exit code.
+    ///
+    /// The mapping follows the project's `exit_codes` constants (e.g., permission errors map to
+    /// `exit_codes::NOPERM`, configuration issues map to `exit_codes::CONFIG`, I/O read errors map to
+    /// `exit_codes::NOINPUT`, etc.). For `IoError`, the operation string is inspected: if it contains
+    /// `"read"`, the function returns `exit_codes::NOINPUT`, otherwise it returns `exit_codes::IOERR`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use crate::error::{NexusError, exit_codes};
+    ///
+    /// let err = NexusError::MissingApiKey;
+    /// let code = u8::from(&err);
+    /// assert_eq!(code, exit_codes::CONFIG);
+    /// ```
     fn from(err: &NexusError) -> u8 {
         match err {
+            NexusError::InvalidRunId(_) => exit_codes::USAGE,
+            NexusError::EventLogLocked => 75, // EX_TEMPFAIL
+            NexusError::EventLogNotFound(_) => exit_codes::NOINPUT,
+            NexusError::EventLogCorrupted { .. } => exit_codes::DATAERR,
+            NexusError::Serialization(_) => exit_codes::DATAERR,
             NexusError::PermissionDenied { .. } => exit_codes::NOPERM,
             NexusError::PatchFailed { .. } => exit_codes::DATAERR,
             NexusError::ConfigError { .. } => exit_codes::CONFIG,
@@ -139,6 +175,32 @@ impl From<&NexusError> for u8 {
     }
 }
 
+/// Derives a process exit code from an `anyhow::Error` by mapping known error types to project exit codes.
+///
+/// If the error is a `NexusError`, its mapped exit code is returned. If it is an `std::io::Error`, the `IOERR` code is returned. For any other error type, the general error code is returned.
+///
+/// # Examples
+///
+/// ```
+/// use anyhow::Error;
+/// // NexusError -> CONFIG (MissingApiKey maps to CONFIG)
+/// let ne = crate::error::NexusError::MissingApiKey;
+/// let err = Error::new(ne);
+/// assert_eq!(crate::error::exit_code_from_anyhow(&err), crate::error::exit_codes::CONFIG);
+///
+/// // std::io::Error -> IOERR
+/// let io_err = std::io::Error::new(std::io::ErrorKind::Other, "io");
+/// let err = Error::new(io_err);
+/// assert_eq!(crate::error::exit_code_from_anyhow(&err), crate::error::exit_codes::IOERR);
+///
+/// // Unknown error -> GENERAL_ERROR
+/// let other = Error::msg("other");
+/// assert_eq!(crate::error::exit_code_from_anyhow(&other), crate::error::exit_codes::GENERAL_ERROR);
+/// ```
+///
+/// # Returns
+///
+/// A `u8` exit code corresponding to the provided error: a `NexusError`'s mapped code, `IOERR` for I/O errors, or `GENERAL_ERROR` otherwise.
 pub fn exit_code_from_anyhow(err: &anyhow::Error) -> u8 {
     if let Some(nexus_err) = err.downcast_ref::<NexusError>() {
         return nexus_err.into();
