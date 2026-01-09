@@ -80,6 +80,10 @@ impl CodexAdapter {
         options: &ExecuteOptions,
         run_id: &str,
     ) -> Result<Vec<ProposedAction>, NexusError> {
+        if options.dry_run {
+            return Ok(Vec::new());
+        }
+
         let request = self.build_request(task, files, options);
         let stream = self.client.chat_completion_stream(request).await?;
         let stream = Box::pin(stream);
@@ -96,6 +100,11 @@ impl CodexAdapter {
         run_id: &str,
         on_chunk: Box<dyn Fn(StreamChunk) + Send>,
     ) -> Result<Vec<ProposedAction>, NexusError> {
+        if options.dry_run {
+            on_chunk(StreamChunk::Done);
+            return Ok(Vec::new());
+        }
+
         let request = self.build_request(task, files, options);
         let stream = self.client.chat_completion_stream(request).await?;
         let stream = Box::pin(stream);

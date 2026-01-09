@@ -43,12 +43,12 @@ impl ResponseParser {
     pub fn parse(&self, response: &str, run_id: &str) -> Result<Vec<ProposedAction>, NexusError> {
         self.validate_run_id(run_id)?;
 
-        let mut actions = self.parse_unified_diffs(response, run_id);
+        let mut actions = self.parse_unified_diffs(response, run_id)?;
         if !actions.is_empty() {
             return Ok(actions);
         }
 
-        actions = self.parse_search_replace(response, run_id);
+        actions = self.parse_search_replace(response, run_id)?;
         if !actions.is_empty() {
             return Ok(actions);
         }
@@ -56,16 +56,26 @@ impl ResponseParser {
         self.parse_json_actions(response)
     }
 
-    pub fn parse_unified_diffs(&self, response: &str, run_id: &str) -> Vec<ProposedAction> {
+    pub fn parse_unified_diffs(
+        &self,
+        response: &str,
+        run_id: &str,
+    ) -> Result<Vec<ProposedAction>, NexusError> {
+        self.validate_run_id(run_id)?;
         let normalized = normalize_line_endings(response);
         let diffs = self.collect_unified_diffs(&normalized);
-        self.build_patch_actions_from_diffs(diffs, run_id)
+        Ok(self.build_patch_actions_from_diffs(diffs, run_id))
     }
 
-    pub fn parse_search_replace(&self, response: &str, run_id: &str) -> Vec<ProposedAction> {
+    pub fn parse_search_replace(
+        &self,
+        response: &str,
+        run_id: &str,
+    ) -> Result<Vec<ProposedAction>, NexusError> {
+        self.validate_run_id(run_id)?;
         let normalized = normalize_line_endings(response);
         let blocks = self.collect_search_replace_blocks(&normalized);
-        self.build_search_replace_actions(blocks, run_id)
+        Ok(self.build_search_replace_actions(blocks, run_id))
     }
 
     pub fn parse_json_actions(&self, response: &str) -> Result<Vec<ProposedAction>, NexusError> {
@@ -471,7 +481,9 @@ mod tests {
         let parser = ResponseParser::new();
         let response = "Patch follows:\n```diff\n--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -1 +1 @@\n-old\n+new\n```\n";
 
-        let actions = parser.parse_unified_diffs(response, RUN_ID);
+        let actions = parser
+            .parse_unified_diffs(response, RUN_ID)
+            .expect("parse unified diffs");
 
         assert_eq!(actions.len(), 1);
         let action = &actions[0];
@@ -492,7 +504,9 @@ mod tests {
         let parser = ResponseParser::new();
         let response = "--- a/src/main.rs\n+++ b/src/main.rs\n@@ -1 +1 @@\n-old\n+new\n";
 
-        let actions = parser.parse_unified_diffs(response, RUN_ID);
+        let actions = parser
+            .parse_unified_diffs(response, RUN_ID)
+            .expect("parse unified diffs");
 
         assert_eq!(actions.len(), 1);
         match &actions[0].details {
@@ -509,7 +523,9 @@ mod tests {
         let parser = ResponseParser::new();
         let response = "--- a/src/main.rs\n+++ b/src/main.rs\n@@ -1 +1 @@\n-old\n+new\n\n--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -1 +1 @@\n-old\n+new\n";
 
-        let actions = parser.parse_unified_diffs(response, RUN_ID);
+        let actions = parser
+            .parse_unified_diffs(response, RUN_ID)
+            .expect("parse unified diffs");
 
         assert_eq!(actions.len(), 2);
         match &actions[0].details {
@@ -531,7 +547,9 @@ mod tests {
         let parser = ResponseParser::new();
         let response = "<<<<<<< SEARCH src/lib.rs\nold\n=======\nnew\n>>>>>>> REPLACE\n";
 
-        let actions = parser.parse_search_replace(response, RUN_ID);
+        let actions = parser
+            .parse_search_replace(response, RUN_ID)
+            .expect("parse search replace");
 
         assert_eq!(actions.len(), 1);
         match &actions[0].details {

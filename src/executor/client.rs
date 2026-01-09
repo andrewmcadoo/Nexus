@@ -9,8 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::pin::Pin;
 use std::time::Duration;
+use tokio::time::sleep;
+use tokio_retry2::RetryError;
 use tokio_retry2::strategy::ExponentialBackoff;
-use tokio_retry2::{Retry, RetryError};
 
 const DEFAULT_BASE_URL: &str = "https://api.openai.com/v1";
 const DEFAULT_MAX_RETRIES: usize = 3;
@@ -172,8 +173,35 @@ impl CodexClient {
         &self,
         request: &ChatCompletionRequest,
     ) -> Result<reqwest::Response, NexusError> {
-        let strategy = build_retry_strategy(self.max_retries);
-        Retry::spawn(strategy, || async { self.send_request(request).await }).await
+        let mut backoff = build_retry_strategy(self.max_retries);
+        let mut retries_remaining = self.max_retries;
+
+        loop {
+            match self.send_request(request).await {
+                Ok(response) => return Ok(response),
+                Err(RetryError::Permanent(err)) => return Err(err),
+                Err(RetryError::Transient { err, .. }) => {
+                    if retries_remaining == 0 {
+                        return Err(err);
+                    }
+                    retries_remaining -= 1;
+
+                    let delay = match err {
+                        NexusError::RateLimited {
+                            retry_after: Some(retry_after),
+                        } => Duration::from_secs(retry_after),
+                        _ => match backoff.next() {
+                            Some(duration) => duration,
+                            None => return Err(err),
+                        },
+                    };
+
+                    if !delay.is_zero() {
+                        sleep(delay).await;
+                    }
+                }
+            }
+        }
     }
 
     async fn send_request(
@@ -260,8 +288,6 @@ enum StreamEvent {
 }
 
 fn build_retry_strategy(max_retries: usize) -> impl Iterator<Item = Duration> {
-    // TODO(PR#4): Consider using Retry-After header values when present (stored in NexusError::RateLimited).
-    // Currently using fixed exponential backoff which may not respect server rate limit guidance.
     ExponentialBackoff::from_millis(RETRY_BASE_MILLIS)
         .factor(RETRY_FACTOR)
         .max_delay(Duration::from_secs(RETRY_MAX_SECS))
