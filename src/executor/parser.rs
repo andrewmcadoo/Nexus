@@ -151,7 +151,7 @@ impl ResponseParser {
 
     fn json_fenced_regex(&self) -> &Regex {
         self.json_fenced.get_or_init(|| {
-            Regex::new(r"(?s)```json\s*(?P<json>\[.*?\])\s*```")
+            Regex::new(r"(?s)```json\s*(?P<json>\[.*\])\s*```")
                 .expect("json fenced regex should compile")
         })
     }

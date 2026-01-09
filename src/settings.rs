@@ -33,8 +33,8 @@ impl NexusConfig {
 
     /// Load configuration honoring an explicit config path.
     ///
-    /// If the path exists, it is loaded directly. If it does not exist, this
-    /// returns an error instead of silently falling back to defaults.
+    /// If the path exists, it is loaded directly. If it does not exist,
+    /// defaults are used and a warning is logged.
     pub fn load_with_config_path(config_path: &Path) -> Result<Self, NexusError> {
         let (settings, settings_path) = load_settings_with_preference(config_path)?;
         let api_key = load_api_key();

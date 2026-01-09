@@ -80,6 +80,9 @@ impl EventLogWriter {
 
     #[cfg(not(unix))]
     fn open_file(path: &Path) -> Result<File, NexusError> {
+        // Note: Windows doesn't support Unix-style permissions (0o600).
+        // File permissions inherit from parent directory ACLs.
+        // For sensitive data, ensure parent directory has appropriate ACLs.
         OpenOptions::new()
             .append(true)
             .create(true)

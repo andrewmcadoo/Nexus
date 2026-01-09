@@ -260,6 +260,8 @@ enum StreamEvent {
 }
 
 fn build_retry_strategy(max_retries: usize) -> impl Iterator<Item = Duration> {
+    // TODO(PR#4): Consider using Retry-After header values when present (stored in NexusError::RateLimited).
+    // Currently using fixed exponential backoff which may not respect server rate limit guidance.
     ExponentialBackoff::from_millis(RETRY_BASE_MILLIS)
         .factor(RETRY_FACTOR)
         .max_delay(Duration::from_secs(RETRY_MAX_SECS))
@@ -273,7 +275,7 @@ fn apply_jitter(duration: Duration) -> Duration {
     }
     let max_jitter = duration.as_millis().saturating_div(JITTER_DIVISOR);
     let max_jitter = u64::try_from(max_jitter).unwrap_or(u64::MAX);
-    let jitter_ms = rand::thread_rng().gen_range(0..=max_jitter);
+    let jitter_ms = rand::rng().random_range(0..=max_jitter);
     duration + Duration::from_millis(jitter_ms)
 }
 
