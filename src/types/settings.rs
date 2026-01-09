@@ -1,0 +1,234 @@
+use serde::{Deserialize, Serialize};
+
+use crate::error::SettingsValidationError;
+
+/// Permission mode enumeration.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum PermissionMode {
+    #[default]
+    Default,
+    AcceptEdits,
+    Autopilot,
+}
+
+/// Autopilot configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutopilotConfig {
+    #[serde(default = "default_max_batch_cu")]
+    pub max_batch_cu: u32,
+
+    #[serde(default = "default_max_batch_steps")]
+    pub max_batch_steps: u32,
+
+    #[serde(default)]
+    pub auto_approve_patches: bool,
+
+    #[serde(default)]
+    pub auto_approve_tests: bool,
+
+    #[serde(default)]
+    pub auto_handoffs: bool,
+}
+
+impl Default for AutopilotConfig {
+    fn default() -> Self {
+        Self {
+            max_batch_cu: default_max_batch_cu(),
+            max_batch_steps: default_max_batch_steps(),
+            auto_approve_patches: false,
+            auto_approve_tests: false,
+            auto_handoffs: false,
+        }
+    }
+}
+
+fn default_max_batch_cu() -> u32 {
+    40
+}
+
+fn default_max_batch_steps() -> u32 {
+    8
+}
+
+/// Nexus settings (matches .nexus/schemas/settings.schema.json).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NexusSettings {
+    #[serde(default = "default_schema_version")]
+    pub schema_version: String,
+
+    #[serde(default)]
+    pub permission_mode: PermissionMode,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub deny_paths: Vec<String>,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub allow_paths_write: Vec<String>,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub allow_commands: Vec<Vec<String>>,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ask_commands: Vec<Vec<String>>,
+
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub deny_commands: Vec<Vec<String>>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub autopilot: Option<AutopilotConfig>,
+}
+
+fn default_schema_version() -> String {
+    "1.0".to_string()
+}
+
+impl Default for NexusSettings {
+    fn default() -> Self {
+        Self {
+            schema_version: default_schema_version(),
+            permission_mode: PermissionMode::Default,
+            deny_paths: vec![
+                ".env*".to_string(),
+                "**/.ssh/**".to_string(),
+                "**/.aws/**".to_string(),
+                "**/.npmrc".to_string(),
+                "**/.pypirc".to_string(),
+            ],
+            allow_paths_write: Vec::new(),
+            allow_commands: Vec::new(),
+            ask_commands: Vec::new(),
+            deny_commands: vec![vec!["sudo".to_string()], vec!["rm".to_string()]],
+            autopilot: None,
+        }
+    }
+}
+
+impl NexusSettings {
+    /// Validate settings after loading.
+    pub fn validate(&self) -> Result<(), SettingsValidationError> {
+        if self.schema_version != "1.0" {
+            return Err(SettingsValidationError::InvalidSchemaVersion(
+                self.schema_version.clone(),
+            ));
+        }
+
+        for path in &self.deny_paths {
+            validate_path_pattern(path)?;
+        }
+        for path in &self.allow_paths_write {
+            validate_path_pattern(path)?;
+        }
+
+        if let Some(ref autopilot) = self.autopilot {
+            if autopilot.max_batch_cu < 1 {
+                return Err(SettingsValidationError::InvalidMaxBatchCu(
+                    autopilot.max_batch_cu,
+                ));
+            }
+            if autopilot.max_batch_steps < 1 {
+                return Err(SettingsValidationError::InvalidMaxBatchSteps(
+                    autopilot.max_batch_steps,
+                ));
+            }
+        }
+
+        Ok(())
+    }
+}
+
+fn validate_path_pattern(path: &str) -> Result<(), SettingsValidationError> {
+    if path.contains("..") {
+        return Err(SettingsValidationError::InvalidPathPattern {
+            path: path.to_string(),
+            reason: "path traversal (..) not allowed".to_string(),
+        });
+    }
+
+    if path.starts_with('/') && !path.starts_with("/**/") {
+        return Err(SettingsValidationError::InvalidPathPattern {
+            path: path.to_string(),
+            reason: "absolute paths not allowed in patterns".to_string(),
+        });
+    }
+
+    if path.chars().any(|ch| ch <= '\u{1f}') {
+        return Err(SettingsValidationError::InvalidPathPattern {
+            path: path.to_string(),
+            reason: "control characters not allowed in patterns".to_string(),
+        });
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_settings() {
+        let settings = NexusSettings::default();
+        assert_eq!(settings.schema_version, "1.0");
+        assert_eq!(settings.permission_mode, PermissionMode::Default);
+        assert_eq!(
+            settings.deny_paths,
+            vec![
+                ".env*".to_string(),
+                "**/.ssh/**".to_string(),
+                "**/.aws/**".to_string(),
+                "**/.npmrc".to_string(),
+                "**/.pypirc".to_string(),
+            ]
+        );
+        assert!(settings.allow_paths_write.is_empty());
+        assert!(settings.allow_commands.is_empty());
+        assert!(settings.ask_commands.is_empty());
+        assert_eq!(
+            settings.deny_commands,
+            vec![vec!["sudo".to_string()], vec!["rm".to_string()]]
+        );
+        assert!(settings.autopilot.is_none());
+    }
+
+    #[test]
+    fn test_validate_valid_settings() {
+        let settings = NexusSettings::default();
+        assert!(settings.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_invalid_schema_version() {
+        let mut settings = NexusSettings::default();
+        settings.schema_version = "2.0".to_string();
+        assert!(matches!(
+            settings.validate(),
+            Err(SettingsValidationError::InvalidSchemaVersion(_))
+        ));
+    }
+
+    #[test]
+    fn test_validate_path_traversal() {
+        let mut settings = NexusSettings::default();
+        settings.deny_paths.push("../etc/passwd".to_string());
+        assert!(matches!(
+            settings.validate(),
+            Err(SettingsValidationError::InvalidPathPattern { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_absolute_path() {
+        let mut settings = NexusSettings::default();
+        settings.allow_paths_write.push("/etc/passwd".to_string());
+        assert!(matches!(
+            settings.validate(),
+            Err(SettingsValidationError::InvalidPathPattern { .. })
+        ));
+    }
+
+    #[test]
+    fn test_validate_glob_absolute_allowed() {
+        assert!(validate_path_pattern("/**/foo").is_ok());
+    }
+}
