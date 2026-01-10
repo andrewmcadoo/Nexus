@@ -57,9 +57,9 @@ impl EventLogPath {
                 run_id
             )));
         }
-        if run_id.len() > 255 {
+        if run_id.len() > 249 {
             return Err(NexusError::InvalidRunId(
-                "run_id exceeds 255 characters".to_string(),
+                "run_id exceeds 249 characters (filename limit with .jsonl extension)".to_string(),
             ));
         }
         Ok(())
@@ -103,8 +103,8 @@ mod tests {
     #[test]
     fn test_event_log_path_rejects_overlong() {
         let path = EventLogPath::new(Path::new("/project"));
-        let ok = "a".repeat(255);
-        let too_long = "a".repeat(256);
+        let ok = "a".repeat(249);
+        let too_long = "a".repeat(250);
         assert!(path.for_run(&ok).is_ok());
         assert!(path.for_run(&too_long).is_err());
     }

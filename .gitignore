@@ -15,6 +15,10 @@ Cargo.lock
 *.swp
 *.swo
 
+# Debug logs
+debug.log
+.cursor/debug.log
+
 # Environment
 .env
 .env.*

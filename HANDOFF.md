@@ -2,23 +2,22 @@
 
 **Updated:** 2026-01-09
 **Project:** Nexus - Safe multi-file refactoring CLI in Rust
+**GitHub:** andrewmcadoo/Nexus
 
 ---
 
-## Current Session: PR #4 Bug Fixes Round 2 - IN PROGRESS
+## Current Session: PR #4 Bug Fixes Complete
 
-### Goal
-Fix 7 NEW bugs identified in PR #4 code review AFTER commit cd6e9cc.
+### Status: Ready for Merge
 
-### Status: In Progress
-
-Addressing second round of code review feedback.
+All code review bugs have been addressed across commits `cd6e9cc`, `ed1f1c5`, and `c4486aa`.
 
 **Branch:** `feature/phase3-executor`
 **PR:** https://github.com/andrewmcadoo/Nexus/pull/4
 
-### Previous Session Completed Tasks (12/12)
+### Bug Fixes Completed (15 total across 3 commits)
 
+#### Commit cd6e9cc (Round 1)
 | Task | File(s) | Description |
 |------|---------|-------------|
 | Task 1 | `executor/adapter.rs` | Fixed run ID mismatch - added `execute_internal()` |
@@ -34,13 +33,20 @@ Addressing second round of code review feedback.
 | Task 11 | `types/settings.rs` | Windows path validation (C:\, UNC, is_control()) |
 | Task 12 | `Cargo.toml` | Repository URL casing (Nexus -> nexus) |
 
-**Verification:** All tests passing, commit `cd6e9cc` pushed.
+#### Commit ed1f1c5 (Round 2)
+- Fixed nested JSON bracket regex bug (`\[.*?\]` → `\[.*\]`)
+
+#### Commit c4486aa (Round 3 - Final)
+- Respect Retry-After header in rate limit responses
+- Add run_id validation to public parsing methods
+- Implement dry_run option to skip API calls when enabled
+
+**Verification:** All 107 tests passing, clippy clean.
 
 ### Next Steps
 
-1. **Complete Round 2 Bug Fixes** - 7 new issues from code review
-2. **Merge PR #4** - After all fixes complete
-3. **Phase 4: Permission Gate** - Next phase of implementation
+1. **Merge PR #4** - After merge conflicts resolved
+2. **Phase 4: Permission Gate** - Next phase of implementation
 
 ---
 
@@ -82,13 +88,15 @@ Enhanced schemas based on competitive analysis (Aider, Codex CLI, LSP, Semgrep):
 - `EventLogWriter/Reader` with fs2 locks
 - Atomic writes, seq assignment, filtering
 
-### Phase 3 - Executor (PR #4 - Bug Fixes Complete)
+### Phase 3 - Executor (PR #4 - Complete)
 - Codex adapter with HTTP client
 - Exponential backoff/jitter retry via `tokio-retry2`
+- Retry-After header support for rate limits
 - SSE parsing, prompt builder
 - Streaming handler
 - Integration with event logging
 - run_id validation, Windows path validation
+- dry_run support
 
 ---
 
@@ -100,6 +108,8 @@ Enhanced schemas based on competitive analysis (Aider, Codex CLI, LSP, Semgrep):
 4. **Distinguishing `ErrorKind::WouldBlock`** - Proper lock error handling
 5. **Test fixtures upfront** - Ready for integration tests
 6. **`tokio-retry2` migration** - New API uses `RetryError::transient/permanent` pattern
+7. **Parallel sub-agent execution** - Speed up multi-task work
+8. **Ship skill for commits** - Consistent workflow with security scans
 
 ---
 
@@ -128,12 +138,22 @@ Enhanced schemas based on competitive analysis (Aider, Codex CLI, LSP, Semgrep):
 
 ---
 
+## Branch Status
+
+| Branch | PR | Status |
+|--------|-----|--------|
+| `main` | - | Base |
+| `feature/phase3-executor` | PR #4 | Ready for merge |
+
+---
+
 ## Skills to Load
 
 When resuming, run `/skill-evaluator` or load:
 - `rust-idioms`, `rust-testing`
 - `codex-coder` (Codex writes ALL code via MCP)
 - `security-scan`
+- `ship`
 
 ---
 
