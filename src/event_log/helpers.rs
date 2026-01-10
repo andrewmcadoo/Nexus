@@ -87,6 +87,62 @@ pub fn tool_failed(run_id: &str, action_id: &str, error: &str) -> RunEvent {
         .with_payload(json!({"action_id": action_id, "success": false, "error": error}))
 }
 
+/// Creates executor.started event.
+pub fn executor_started(run_id: &str, task: &str, file_count: usize, model: &str) -> RunEvent {
+    let actor = Actor {
+        agent: Some(AgentRole::Executor),
+        provider: Some("openai".to_string()),
+        model: Some(model.to_string()),
+    };
+
+    RunEvent::new(run_id, "executor.started")
+        .with_actor(actor)
+        .with_payload(json!({
+            "task": task,
+            "file_count": file_count,
+            "model": model
+        }))
+}
+
+/// Creates executor.streaming event.
+pub fn executor_streaming(run_id: &str, chunk_size: usize, total_chars: usize) -> RunEvent {
+    RunEvent::new(run_id, "executor.streaming")
+        .with_actor(default_executor_actor())
+        .with_payload(json!({
+            "chunk_size": chunk_size,
+            "total_chars": total_chars
+        }))
+}
+
+/// Creates executor.completed event.
+pub fn executor_completed(run_id: &str, action_count: usize, duration_ms: u128) -> RunEvent {
+    RunEvent::new(run_id, "executor.completed")
+        .with_actor(default_executor_actor())
+        .with_payload(json!({
+            "action_count": action_count,
+            "duration_ms": duration_ms,
+            "success": true
+        }))
+}
+
+/// Creates executor.failed event.
+pub fn executor_failed(run_id: &str, error: &str, status_code: Option<u16>) -> RunEvent {
+    let mut payload = json!({
+        "error": error,
+        "success": false
+    });
+
+    if let Some(status_code) = status_code {
+        if let Some(payload) = payload.as_object_mut() {
+            payload.insert("status_code".to_string(), json!(status_code));
+        }
+    }
+
+    RunEvent::new(run_id, "executor.failed")
+        .with_actor(default_executor_actor())
+        .with_payload(payload)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

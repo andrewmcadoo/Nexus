@@ -34,8 +34,7 @@ impl NexusConfig {
     /// Load configuration honoring an explicit config path.
     ///
     /// If the path exists, it is loaded directly. If it does not exist,
-    /// this falls back to defaults with `settings_path` set to `None`.
-    /// Invalid JSON in an existing file still returns an error.
+    /// defaults are used and a warning is logged.
     pub fn load_with_config_path(config_path: &Path) -> Result<Self, NexusError> {
         let (settings, settings_path) = load_settings_with_preference(config_path)?;
         let api_key = load_api_key();
@@ -91,7 +90,10 @@ fn load_settings() -> Result<(NexusSettings, Option<PathBuf>), NexusError> {
     }
 }
 
-/// Load settings preferring an explicit path; fall back to defaults if missing.
+/// Load settings preferring an explicit path; use defaults if missing.
+///
+/// If the explicit path exists, it is loaded directly. If it does not exist,
+/// defaults are used with a warning (matching CLI validator documentation).
 fn load_settings_with_preference(
     config_path: &Path,
 ) -> Result<(NexusSettings, Option<PathBuf>), NexusError> {
@@ -101,7 +103,11 @@ fn load_settings_with_preference(
         return Ok((settings, Some(config_path.to_path_buf())));
     }
 
-    debug!("Config file not found at {:?}, using defaults", config_path);
+    // Config file not found - use defaults as documented in CLI validator
+    log::warn!(
+        "Config file {:?} not found, using default settings",
+        config_path
+    );
     Ok((NexusSettings::default(), None))
 }
 

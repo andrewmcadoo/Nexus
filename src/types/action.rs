@@ -62,9 +62,7 @@ pub struct ProposedAction {
     pub details: ActionDetails,
 }
 
-/// Provides the default risk level for actions.
-///
-/// The default risk level is 1.
+/// Provides the default risk level for actions (1).
 fn default_risk() -> u8 {
     1
 }
@@ -218,9 +216,7 @@ pub struct CommandDetails {
     pub purpose: Option<String>,
 }
 
-/// Default command timeout in seconds.
-///
-/// Used as the default timeout value for command executions when no explicit timeout is provided.
+/// Default command timeout in seconds (1200).
 fn default_timeout() -> u32 {
     1200
 }
@@ -282,8 +278,7 @@ pub struct FileDeleteDetails {
 }
 
 /// Checks whether the given value is equal to its type's `Default` value.
-///
-/// This is intended for use with `serde`'s `skip_serializing_if` to omit fields that are equal to their defaults.
+/// Used with `serde`'s `skip_serializing_if` to omit default fields.
 fn is_default<T: Default + PartialEq>(value: &T) -> bool {
     *value == T::default()
 }

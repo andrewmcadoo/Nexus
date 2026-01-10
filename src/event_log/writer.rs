@@ -1,7 +1,7 @@
 //! Event log writer with atomic appends and exclusive locking.
 
 use std::fs::{File, OpenOptions};
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::io::{BufRead, BufReader, BufWriter, ErrorKind, Write};
 use std::path::{Path, PathBuf};
 
 use fs2::FileExt;
@@ -37,8 +37,19 @@ impl EventLogWriter {
         }
 
         let file = Self::open_file(path)?;
-        file.try_lock_exclusive()
-            .map_err(|_| NexusError::EventLogLocked)?;
+
+        // Distinguish between lock contention and other lock failures
+        file.try_lock_exclusive().map_err(|e| {
+            if e.kind() == ErrorKind::WouldBlock {
+                NexusError::EventLogLocked
+            } else {
+                NexusError::IoError {
+                    operation: "acquire exclusive lock".to_string(),
+                    path: path.to_path_buf(),
+                    source: e,
+                }
+            }
+        })?;
 
         let max_seq = Self::scan_max_event_seq(path)?;
         let next_seq = if max_seq == 0 { 1 } else { max_seq + 1 };
@@ -69,6 +80,9 @@ impl EventLogWriter {
 
     #[cfg(not(unix))]
     fn open_file(path: &Path) -> Result<File, NexusError> {
+        // Note: Windows doesn't support Unix-style permissions (0o600).
+        // File permissions inherit from parent directory ACLs.
+        // For sensitive data, ensure parent directory has appropriate ACLs.
         OpenOptions::new()
             .append(true)
             .create(true)
@@ -102,13 +116,7 @@ impl EventLogWriter {
                 continue;
             }
 
-            let value: serde_json::Value = match serde_json::from_str(&line) {
-                Ok(v) => v,
-                Err(e) => {
-                    log::warn!("Skipping corrupted line in event log: {}", e);
-                    continue;
-                }
-            };
+            let value: serde_json::Value = serde_json::from_str(&line)?;
             if let Some(seq) = value.get("event_seq").and_then(|v| v.as_u64()) {
                 max_seq = max_seq.max(seq);
             }
@@ -279,24 +287,6 @@ mod tests {
 
         let writer = EventLogWriter::open(&path).unwrap();
         assert_eq!(writer.next_seq(), 1);
-    }
-
-    #[test]
-    fn test_writer_handles_corrupted_line_on_reopen() {
-        let dir = TempDir::new().unwrap();
-        let path = dir.path().join("test.jsonl");
-
-        // Write valid line, corrupted line, valid line
-        std::fs::write(
-            &path,
-            "{\"event_seq\":1}\n\
-             not valid json\n\
-             {\"event_seq\":3}\n",
-        )
-        .unwrap();
-
-        let writer = EventLogWriter::open(&path).unwrap();
-        assert_eq!(writer.next_seq(), 4); // Should continue from max (3) + 1
     }
 
     #[test]

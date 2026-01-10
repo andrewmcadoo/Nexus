@@ -6,7 +6,51 @@
 
 ---
 
-## Goal
+## Current Session: PR #4 Bug Fixes Complete
+
+### Status: Ready for Merge
+
+All code review bugs have been addressed across commits `cd6e9cc`, `ed1f1c5`, and `c4486aa`.
+
+**Branch:** `feature/phase3-executor`
+**PR:** https://github.com/andrewmcadoo/Nexus/pull/4
+
+### Bug Fixes Completed (15 total across 3 commits)
+
+#### Commit cd6e9cc (Round 1)
+| Task | File(s) | Description |
+|------|---------|-------------|
+| Task 1 | `executor/adapter.rs` | Fixed run ID mismatch - added `execute_internal()` |
+| Task 2 | `main.rs`, `settings.rs` | Removed hardcoded debug paths and debug_log functions |
+| Task 3 | `settings.rs` | Fixed config loader - now uses defaults with warning |
+| Task 4 | `event_log/writer.rs` | Fixed missing log path in IoError - added `path` field |
+| Task 5 | `event_log/writer.rs` | Fixed lock failure masking - distinguish `WouldBlock` |
+| Task 6 | `Cargo.toml`, `client.rs` | Migrated `tokio-retry` to `tokio-retry2` |
+| Task 7 | `executor/client.rs` | Fixed fallback timeout - use `.expect()` not silent fallback |
+| Task 8 | `executor/parser.rs` | Fixed run_id validation - added path/length checks |
+| Task 9 | `executor/parser.rs` | Added doc comments to JSON parsing methods |
+| Task 10 | `.gitignore` | Removed `.cursor/debug.log`, added `.cursor/` to gitignore |
+| Task 11 | `types/settings.rs` | Windows path validation (C:\, UNC, is_control()) |
+| Task 12 | `Cargo.toml` | Repository URL casing (Nexus -> nexus) |
+
+#### Commit ed1f1c5 (Round 2)
+- Fixed nested JSON bracket regex bug (`\[.*?\]` → `\[.*\]`)
+
+#### Commit c4486aa (Round 3 - Final)
+- Respect Retry-After header in rate limit responses
+- Add run_id validation to public parsing methods
+- Implement dry_run option to skip API calls when enabled
+
+**Verification:** All 107 tests passing, clippy clean.
+
+### Next Steps
+
+1. **Merge PR #4** - After merge conflicts resolved
+2. **Phase 4: Permission Gate** - Next phase of implementation
+
+---
+
+## Project Overview
 
 Build a Rust CLI that does safe multi-file refactoring:
 1. User describes refactoring task
@@ -19,106 +63,40 @@ Build a Rust CLI that does safe multi-file refactoring:
 
 ---
 
-## Current Progress
+## Completed Phases
 
-### Completed: Phase 0 & 0.5 - Schema Work
-- All schema fixes and improvements done
-- Test fixtures created
+### Phase 0 - Schema Fixes
+- Removed `bypass` from permission_mode
+- Removed `ext` fields from all 9 schemas
+- Added `maxLength: 1000000` to diff fields
+- Created test fixtures directory
 
-### Completed: Phase 1 - CLI Foundation
-- Branch: `feature/phase1-foundation`
-- PR #1 merged
-- Clap CLI, error types, settings loader, Rust types from schemas
+### Phase 0.5 - Schema Improvements
+Enhanced schemas based on competitive analysis (Aider, Codex CLI, LSP, Semgrep):
+- Path validation, file operations, diff formats, fallback matching
+- Settings required fields, approval groups, document versioning
 
-### Completed: Phase 2 - Event Logging
-- Branch: `feature/phase1-foundation` (same branch)
-- PR #3: **Open with bug reviews - NEEDS FIXES**
-- Append-only JSONL event log with file locking
-- Reader/Writer with shared/exclusive locks
-- Helper functions for event creation
+### Phase 1 - Foundation
+- Cargo project setup with dependencies
+- `src/error.rs` with `NexusError` enum
+- Rust types from JSON schemas (`src/types/`)
+- CLI skeleton with clap
+- Settings loader
 
-### Just Shipped: Phase 3 - Executor Module
-- Branch: `feature/phase3-executor`
-- PR #4: Draft PR created
-- HTTP client with retry logic and streaming
-- Response parser for unified diffs and search/replace
-- Prompt builder for API requests
-- Event logging integration
+### Phase 2 - Event Log
+- Append-only JSONL event logging
+- `EventLogWriter/Reader` with fs2 locks
+- Atomic writes, seq assignment, filtering
 
----
-
-## IMMEDIATE TODO: Fix PR #3 Bug Reviews
-
-### Critical Issues
-
-#### 1. Hardcoded Debug Paths (CRITICAL)
-**Files:** `src/main.rs:103-148`, `src/settings.rs:232-277`
-
-**Problem:** `debug_log` functions use hardcoded paths:
-```rust
-const DEBUG_LOG_PATH: &str = "/Users/aj/Desktop/Projects/Nexus/.cursor/debug.log";
-```
-These fail on other machines and CI.
-
-**Fix Options:**
-- Option A: Use `NEXUS_DEBUG_LOG` env var with `std::env::temp_dir()` fallback
-- Option B: Guard with `#[cfg(feature = "debug-logging")]` feature flag
-- Option C: Remove entirely (it's temporary debugging code)
-
-#### 2. Debug Log File Committed (MEDIUM)
-**File:** `.cursor/debug.log`
-
-**Problem:** Debug log with session data committed to repo.
-
-**Fix:**
-```bash
-echo ".cursor/debug.log" >> .gitignore
-git rm --cached .cursor/debug.log
-```
-
-#### 3. Config Loading Breaks Without File (MEDIUM)
-**File:** `src/main.rs:69-72`
-
-**Problem:** Changed from `NexusConfig::load()` to `load_with_config_path(&cli.config)` which errors if file doesn't exist instead of falling back to defaults.
-
-**Fix:** Check if path exists, fall back to `load()` if not:
-```rust
-let config = if cli.config.exists() {
-    NexusConfig::load_with_config_path(&cli.config)?
-} else {
-    NexusConfig::load()?
-};
-```
-
-### Minor Issues
-
-#### 4. EventLogWriter Uses Empty PathBuf in Errors
-**File:** `src/event_log/writer.rs:131-137`
-
-**Problem:** Error handlers use `PathBuf::new()` (empty) instead of actual path.
-
-**Fix:** Add `path: PathBuf` field to `EventLogWriter` struct, use `self.path.clone()` in error mappings.
-
-#### 5. Run ID Length Validation Off-by-6
-**File:** `src/event_log/mod.rs:59-64`
-
-**Problem:** Allows 255 chars but filename is `{run_id}.jsonl` (+6 chars).
-
-**Fix:** Change limit from 255 to 249 characters.
-
-#### 6. Writer Fails on Corrupted Lines
-**File:** `src/event_log/writer.rs:102-103`
-
-**Problem:** `scan_max_event_seq` fails on malformed JSON, unlike reader which skips.
-
-**Fix:** Skip corrupted lines with warning, continue scanning (match reader behavior).
-
-#### 7. Non-Executable Doctests on Private Helpers
-**File:** `src/types/action.rs:65-87, 233-244, 302-315`
-
-**Problem:** Doc examples on private functions can't be tested.
-
-**Fix:** Remove `/// # Examples` blocks or convert to `//` comments.
+### Phase 3 - Executor (PR #4 - Complete)
+- Codex adapter with HTTP client
+- Exponential backoff/jitter retry via `tokio-retry2`
+- Retry-After header support for rate limits
+- SSE parsing, prompt builder
+- Streaming handler
+- Integration with event logging
+- run_id validation, Windows path validation
+- dry_run support
 
 ---
 
@@ -126,21 +104,21 @@ let config = if cli.config.exists() {
 
 1. **Skill evaluation before implementation** - Caught issues early
 2. **Codex via MCP for all code** - Clean separation: Claude plans/reviews, Codex writes
-3. **Parallel sub-agent execution** - Speed up multi-task work
-4. **Ship skill for commits** - Consistent workflow with security scans
-5. **Separate branches per phase** - Clean PR separation
+3. **`execute_internal()` pattern** - Cleanly solved run_id mismatch
+4. **Distinguishing `ErrorKind::WouldBlock`** - Proper lock error handling
+5. **Test fixtures upfront** - Ready for integration tests
+6. **`tokio-retry2` migration** - New API uses `RetryError::transient/permanent` pattern
+7. **Parallel sub-agent execution** - Speed up multi-task work
+8. **Ship skill for commits** - Consistent workflow with security scans
 
 ---
 
 ## What Didn't Work / Watch Out For
 
 1. **Schema `oneOf` with sibling `kind`/`details`** - Maps awkwardly to Rust. Use `#[serde(flatten)]` with `#[serde(untagged)]` enum.
-
-2. **JSON Schema `default` doesn't auto-apply in serde** - Need explicit `#[serde(default = "...")]` annotations.
-
-3. **Hardcoded developer paths** - Debug logging committed with absolute paths. Always use env vars or temp dirs.
-
-4. **Config loading semantic change** - `load_with_config_path` has different semantics than `load()`. Check file existence first.
+2. **JSON Schema `default` doesn't auto-apply in serde** - Need explicit `#[serde(default = "...")]`.
+3. **Hardcoded debug paths** - Don't commit dev-specific paths.
+4. **`tokio-retry2` API change** - v0.5 requires `RetryError<E>` return type, not custom error enum. Use `Retry::spawn` not `RetryIf::spawn`.
 
 ---
 
@@ -148,15 +126,15 @@ let config = if cli.config.exists() {
 
 | File | Purpose |
 |------|---------|
+| `src/main.rs` | CLI entry point |
+| `src/settings.rs` | Config loader |
+| `src/error.rs` | Error types |
+| `src/event_log/writer.rs` | JSONL event logging |
+| `src/executor/adapter.rs` | Codex API adapter |
+| `src/executor/client.rs` | HTTP client with retry |
+| `src/executor/parser.rs` | Response parsing |
+| `src/types/settings.rs` | Settings types with path validation |
 | `docs/implementation-plan.md` | Full 7-phase build plan |
-| `docs/plans/phase2-implementation-plan.md` | Phase 2 detailed plan |
-| `src/event_log/` | Event logging module |
-| `src/executor/` | Codex executor module (Phase 3) |
-| `src/cli.rs` | CLI argument parsing |
-| `src/settings.rs` | Config loading |
-| `src/error.rs` | Error types and exit codes |
-| `tests/event_log.rs` | Event log integration tests |
-| `tests/executor.rs` | Executor integration tests |
 
 ---
 
@@ -165,55 +143,14 @@ let config = if cli.config.exists() {
 | Branch | PR | Status |
 |--------|-----|--------|
 | `main` | - | Base |
-| `feature/phase1-foundation` | PR #3 | **Needs bug fixes** |
-| `feature/phase3-executor` | PR #4 | Draft, ready for review |
-
----
-
-## Next Steps
-
-1. **Fix PR #3 bugs** (on `feature/phase1-foundation` branch)
-   - Remove/fix hardcoded debug paths
-   - Add `.cursor/debug.log` to gitignore
-   - Fix config loading fallback
-   - Fix EventLogWriter path in errors
-   - Adjust run_id length limit
-   - Make writer skip corrupted lines
-   - Fix/remove private helper doctests
-
-2. **Get PR #3 merged**
-
-3. **Continue Phase 4** - Permission Gate
-   - Interactive prompts with crossterm
-   - Allow/Deny/Ask modes
-   - Policy matching
-
----
-
-## Commands to Resume
-
-```bash
-cd /Users/aj/Desktop/Projects/Nexus
-git checkout feature/phase1-foundation
-git status
-
-# Check test status
-cargo test
-
-# Run clippy
-cargo clippy -- -D warnings
-
-# After fixes, ship
-# /ship
-```
+| `feature/phase3-executor` | PR #4 | Ready for merge |
 
 ---
 
 ## Skills to Load
 
 When resuming, run `/skill-evaluator` or load:
-- `rust-idioms`
-- `rust-testing`
+- `rust-idioms`, `rust-testing`
 - `codex-coder` (Codex writes ALL code via MCP)
 - `security-scan`
 - `ship`
@@ -225,5 +162,5 @@ When resuming, run `/skill-evaluator` or load:
 Project memory at: `.claude/memory/`
 - `CLAUDE-activeContext.md` - Session state
 - `CLAUDE-patterns.md` - Code patterns
-- `CLAUDE-decisions.md` - Architecture decisions
+- `CLAUDE-decisions.md` - Architecture decisions (ADRs)
 - `CLAUDE-troubleshooting.md` - Known issues
