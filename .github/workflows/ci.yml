@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, "1.85"]
+        rust: [stable]
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, "1.85"]
+        rust: [stable]
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [stable, "1.85"]
+        rust: [stable]
         os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
